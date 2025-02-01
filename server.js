@@ -9,7 +9,7 @@ const enviosRoutes = require('./routes/envios');
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
@@ -39,6 +39,11 @@ console.log("➡️ /api/casos");
 console.log("➡️ /api/comunicaciones");
 console.log("➡️ /api/evaluaciones");
 console.log("➡️ /api/envios");
+
+// Prueba de que el backend está corriendo
+app.get('/', (req, res) => {
+    res.send('✅ Backend funcionando correctamente en Railway.');
+});
 
 
 app.listen(PORT, () => {
