@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const bodyParser = require('body-parser');
 const casosRoutes = require('./routes/casos');
 const comunicacionesRoutes = require('./routes/comunicaciones');
 const evaluacionesRoutes = require('./routes/evaluaciones');
@@ -13,8 +12,8 @@ const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());  // ✅ Reemplaza bodyParser.json()
+app.use(express.urlencoded({ extended: true }));  // ✅ Reemplaza bodyParser.urlencoded()
 
 // Manejo de errores de JSON inválido
 app.use((err, req, res, next) => {
@@ -30,21 +29,22 @@ app.use('/api/comunicaciones', comunicacionesRoutes);
 app.use('/api/evaluaciones', evaluacionesRoutes);
 app.use('/api/envios', enviosRoutes);
 
-app.get('/', (req, res) => {
-    res.send('API funcionando correctamente');
-});
-
 console.log("📌 Rutas cargadas correctamente:");
 console.log("➡️ /api/casos");
 console.log("➡️ /api/comunicaciones");
 console.log("➡️ /api/evaluaciones");
 console.log("➡️ /api/envios");
 
-// Prueba de que el backend está corriendo
+// ✅ Ruta de prueba única (Evita definir `/` dos veces)
 app.get('/', (req, res) => {
     res.send('✅ Backend funcionando correctamente en Railway.');
 });
 
+// Manejo de errores global
+app.use((err, req, res, next) => {
+    console.error("❌ Error en el servidor:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+});
 
 app.listen(PORT, () => {
     console.log(`✅ Servidor corriendo en el puerto ${PORT}`);
