@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 
 // ✅ Middleware de CORS mejorado
 app.use(cors({
-    origin: 'https://gestion-visitasfr.vercel.app/', // ⚠️ RESTRINGE en producción (ejemplo: 'https://tudominio.com')
+    origin: 'https://gestion-visitasfr.vercel.app', // ⚠️ RESTRINGE en producción (ejemplo: 'https://tudominio.com')
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
