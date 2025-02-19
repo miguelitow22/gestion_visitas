@@ -61,7 +61,7 @@ router.post('/', async (req, res) => {
             .insert([{
                 id, nombre, documento, telefono, email, estado, tipo_visita, direccion,
                 punto_referencia, fecha_visita, hora_visita, intentos_contacto,
-                evaluador_email, evaluador_asignado, solicitud, contacto,
+                motivo_no_programacion, evaluador_email, evaluador_asignado, solicitud, contacto,
                 cliente, cargo, regional,
                 telefonosecundario: telefonoSecundario, // ✅ Corregido
                 telefonoterciario: telefonoTerciario, // ✅ Corregido
@@ -77,8 +77,8 @@ router.post('/', async (req, res) => {
         await Promise.all([
             enviarCorreo(email, 'Confirmación de Caso', mensajeEvaluado),
             enviarWhatsApp(telefono, mensajeEvaluado),
-            enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le ha asignado un nuevo caso con ID: ${id} en la fecha: ${fecha_visita}y hora: ${hora_visita} en  la direccion ${direccion}`),
-            enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado', `Nuevo caso creado con ID: ${id}, nombre del evaluado ${nombre}.`)
+            enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le ha asignado un nuevo caso con ID: ${id} en la fecha: ${fecha_visita} y hora: ${hora_visita} en la dirección ${direccion}. Motivo de no programación: ${motivo_no_programacion}`),
+            enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado', `Nuevo caso creado con ID: ${id}, nombre del evaluado ${nombre}. Motivo de no programación: ${motivo_no_programacion}`)
         ]);
 
         res.json({ message: '✅ Caso creado con éxito', data });
