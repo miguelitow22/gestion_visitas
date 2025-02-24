@@ -96,4 +96,24 @@ router.post('/:id/evidencia', upload.single('file'), async (req, res) => {
     }
 });
 
+router.get('/calendar-url', async (req, res) => {
+    try {
+        console.log("📅 [LOG] Obteniendo URL del calendario...");
+
+        // Aquí se puede almacenar en Supabase o en una variable de entorno
+        const calendarUrl = process.env.CALENDAR_URL || 
+            "https://calendar.google.com/calendar/embed?src=cfe64a7e73e580180b6468e279686fb93434cf46a21de723b51dde3ef5a9bc96%40group.calendar.google.com&ctz=America%2FBogota";
+
+        if (!calendarUrl) {
+            return res.status(404).json({ error: "URL del calendario no configurada." });
+        }
+
+        res.status(200).json({ calendarUrl });
+    } catch (error) {
+        console.error("❌ [LOG] Error al obtener la URL del calendario:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+
+
 module.exports = router;
