@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const { enviarCorreo } = require('../services/emailService');
 const { enviarWhatsApp } = require('../services/whatsappService');
@@ -9,17 +8,35 @@ require('dotenv').config();
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
+// 📌 **Configuración de almacenamiento para evidencias**
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
+    limits: { fileSize: 5 * 1024 * 1024 }, // Máximo 5MB
 });
 
-// ✅ Funciones de validación
+// ✅ **Constantes con los correos y teléfonos de las regionales**
+const regionales = {
+    "Norte": { email: "regional.norte@empresa.com", telefono: "+573001112233" },
+    "Sur": { email: "regional.sur@empresa.com", telefono: "+573002223344" },
+    "Centro": { email: "regional.centro@empresa.com", telefono: "+573003334455" }
+};
+
+// ✅ **Formularios por tipo de visita**
+const formularios = {
+    "Ingreso": "https://formulario.com/ingreso",
+    "Seguimiento": "https://formulario.com/seguimiento",
+    "Ingreso Bicicletas HA": "https://formulario.com/bicicletas-ingreso",
+    "Seguimiento Bicicletas HA": "https://formulario.com/bicicletas-seguimiento",
+    "Atlas": "https://formulario.com/atlas",
+    "Pic Colombia": "https://formulario.com/pic-colombia"
+};
+
+// ✅ **Validaciones de datos**
 const validarEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
-// ✅ Crear un nuevo caso con ID único y validaciones
+// ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
     const {
         id, nombre, documento, telefono, email, estado, tipo_visita, direccion,
@@ -29,12 +46,9 @@ router.post('/', async (req, res) => {
         telefonoSecundario = "", telefonoTerciario = ""
     } = req.body;
 
-    if (!id || !nombre || !telefono || !email || !estado || !evaluador_email) {
-        return res.status(400).json({ error: 'ID, nombre, teléfono, email, estado y evaluador_email son obligatorios' });
+    if (!id || !nombre || !telefono || !email || !estado || !evaluador_email || !regional) {
+        return res.status(400).json({ error: 'Datos obligatorios faltantes.' });
     }
-    console.log("📧 Validando email:", email);
-    console.log("📧 Validando evaluador_email:", evaluador_email);
-
 
     if (!validarEmail(email) || !validarEmail(evaluador_email)) {
         return res.status(400).json({ error: 'Correo electrónico no válido' });
@@ -45,7 +59,7 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // Verificar si el ID ya existe
+        // 🔍 **Verificar si el caso ya existe**
         const { data: casoExistente } = await supabase
             .from('casos')
             .select('id')
@@ -53,9 +67,17 @@ router.post('/', async (req, res) => {
             .maybeSingle();
 
         if (casoExistente) {
-            return res.status(400).json({ error: '❌ El ID del caso ya existe. Prueba con otro ID.' });
+            return res.status(400).json({ error: '❌ El ID del caso ya existe.' });
         }
 
+        // 📌 **Obtener datos de la regional**
+        const emailRegional = regionales[regional]?.email || null;
+        const telefonoRegional = telefonoSecundario || telefonoTerciario || regionales[regional]?.telefono || null;
+
+        // 📌 **Obtener enlace de formulario**
+        const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
+
+        // 🔹 **Guardar el caso en la base de datos**
         const { data, error } = await supabase
             .from('casos')
             .insert([{
@@ -69,16 +91,26 @@ router.post('/', async (req, res) => {
             }])
             .select();
 
-
         if (error) throw error;
 
-        // 📩 Notificaciones
-        const mensajeEvaluado = `Estimado/a ${nombre}, su caso ha sido creado con fecha : ${fecha_visita} y hora:  ${hora_visita}.`;
+        // ✅ **Notificaciones**
         await Promise.all([
-            enviarCorreo(email, 'Confirmación de Caso', mensajeEvaluado),
-            enviarWhatsApp(telefono, mensajeEvaluado),
-            enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le ha asignado un nuevo caso con ID: ${id} en la fecha: ${fecha_visita} y hora: ${hora_visita} en la dirección ${direccion}. Motivo de no programación: ${motivo_no_programacion}`),
-            enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado', `Nuevo caso creado con ID: ${id}, nombre del evaluado ${nombre}. Motivo de no programación: ${motivo_no_programacion}`)
+            // 📩 **Evaluado**
+            enviarCorreo(email, 'Confirmación de Caso', `Estimado/a ${nombre}, su caso ha sido creado para ${fecha_visita} a las ${hora_visita}.`),
+            enviarWhatsApp(telefono, `Su caso ha sido registrado para ${fecha_visita} a las ${hora_visita}.`),
+            enviarCorreo(email, "Formulario de Visita", `Complete el formulario en: ${linkFormulario}`),
+            enviarWhatsApp(telefono, `Complete el formulario en: ${linkFormulario}`),
+
+            // 📩 **Evaluador**
+            enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le asignó un caso con ID: ${id} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`),
+
+            // 📩 **Regional (Si aplica)**
+            emailRegional ? enviarCorreo(emailRegional, 'Nuevo Caso en su Regional', `Caso asignado en ${regional} para el cliente ${cliente}, programado para ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
+            telefonoRegional ? enviarWhatsApp(telefonoRegional, `Caso asignado en ${regional} para ${cliente} el ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
+
+            // 📩 **Atlas (central)**
+            enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado', `Nuevo caso con ID: ${id}, evaluado: ${nombre}.`),
+            enviarWhatsApp('+573001234567', `Nuevo caso creado con ID: ${id}, evaluado: ${nombre}.`) // Número de WhatsApp de Atlas
         ]);
 
         res.json({ message: '✅ Caso creado con éxito', data });
@@ -89,7 +121,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ✅ Actualizar estado de un caso
+// ✅ **Actualizar estado de un caso**
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
     let { estado, intentos_contacto } = req.body;
@@ -117,7 +149,8 @@ router.put('/:id', async (req, res) => {
             enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
             enviarWhatsApp(caso.telefono, mensajeEstado),
             enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado),
-            enviarCorreo('atlas@empresa.com', 'Actualización de Caso', mensajeEstado)
+            enviarCorreo('atlas@empresa.com', 'Actualización de Caso', mensajeEstado),
+            enviarWhatsApp('+573001234567', `El estado del caso ${id} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
         ]);
 
         res.json({ message: 'Caso actualizado con éxito', data });
@@ -128,10 +161,10 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// ✅ Subir evidencia
+// ✅ **Subir evidencia**
 router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
     const { id } = req.params;
-    
+
     if (!req.file) {
         return res.status(400).json({ error: "No se ha subido ningún archivo." });
     }
@@ -143,9 +176,9 @@ router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
         console.log("📁 [LOG] Tamaño del archivo:", req.file.size, "bytes");
 
         const filePath = `casos/${id}/${Date.now()}_${req.file.originalname}`;
-        
+
         const { data, error: uploadError } = await supabase.storage
-            .from('evidencias_visitas') 
+            .from('evidencias_visitas')
             .upload(filePath, req.file.buffer, { contentType: req.file.mimetype });
 
         if (uploadError) {
@@ -194,8 +227,7 @@ router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
     }
 });
 
-
-// ✅ Obtener un caso por ID
+// ✅ **Obtener un caso por ID**
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -209,7 +241,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ✅ Obtener todos los casos
+// ✅ **Obtener todos los casos**
 router.get('/', async (req, res) => {
     try {
         const { data, error } = await supabase.from('casos').select('*');
