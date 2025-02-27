@@ -38,18 +38,23 @@ const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
 // ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
+    console.log("📌 Recibiendo datos en backend:", JSON.stringify(req.body, null, 2));
+
     const {
         id, nombre, documento, telefono, email, estado, tipo_visita, direccion,
         punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
-        solicitud = "", contacto = "", cliente = "", cargo = "", regional = "",
+        solicitud = "", contacto = "", cliente = "", cargo = "", regional,
         telefonoSecundario = "", telefonoTerciario = ""
     } = req.body;
 
     if (!id || !nombre || !telefono || !email || !estado || !evaluador_email || !regional) {
-        return res.status(400).json({ error: 'Datos obligatorios faltantes.' });
+        return res.status(400).json({ error: 'Datos obligatorios faltantes (incluyendo regional).' });
     }
 
+    console.log("📌 Regional recibido en backend:", regional);
+
+    // Validaciones
     if (!validarEmail(email) || !validarEmail(evaluador_email)) {
         return res.status(400).json({ error: 'Correo electrónico no válido' });
     }
@@ -59,7 +64,6 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // 🔍 **Verificar si el caso ya existe**
         const { data: casoExistente } = await supabase
             .from('casos')
             .select('id')
@@ -85,13 +89,15 @@ router.post('/', async (req, res) => {
                 punto_referencia, fecha_visita, hora_visita, intentos_contacto,
                 motivo_no_programacion, evaluador_email, evaluador_asignado, solicitud, contacto,
                 cliente, cargo, regional,
-                telefonosecundario: telefonoSecundario, // ✅ Corregido
-                telefonoterciario: telefonoTerciario, // ✅ Corregido
+                telefonosecundario: telefonoSecundario,
+                telefonoterciario: telefonoTerciario,
                 ultima_interaccion: new Date().toISOString(), evidencia_url: ""
             }])
             .select();
 
         if (error) throw error;
+
+        console.log("✅ Caso guardado en la base de datos:", data);
 
         // ✅ **Notificaciones**
         await Promise.all([
