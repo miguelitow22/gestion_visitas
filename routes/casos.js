@@ -38,7 +38,12 @@ const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
 // ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
-    console.log("📌 Recibiendo datos en backend:", JSON.stringify(req.body, null, 2));
+    if (!req.body) {
+        console.error("❌ Error: No se recibió un cuerpo en la solicitud.");
+        return res.status(400).json({ error: "No se recibió un cuerpo en la solicitud." });
+    }
+
+    console.log("📌 Recibiendo datos en backend:", req.body);
 
     const {
         id, nombre, documento, telefono, email, estado, tipo_visita, direccion,
@@ -49,6 +54,7 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     if (!id || !nombre || !telefono || !email || !estado || !evaluador_email || !regional) {
+        console.error("❌ Error: Falta regional u otro dato obligatorio.");
         return res.status(400).json({ error: 'Datos obligatorios faltantes (incluyendo regional).' });
     }
 

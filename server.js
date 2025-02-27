@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const bodyParser = require('body-parser');
 const casosRoutes = require('./routes/casos');
 const comunicacionesRoutes = require('./routes/comunicaciones');
 const evaluacionesRoutes = require('./routes/evaluaciones');
@@ -19,15 +18,14 @@ app.use((req, res, next) => {
 
 // ✅ Middleware de CORS mejorado
 app.use(cors({
-    origin: 'https://gestion-visitasfr.vercel.app', // ⚠️ RESTRINGE en producción (ejemplo: 'https://tudominio.com')
+    origin: 'https://gestion-visitasfr.vercel.app', // ⚠️ Cambiar en producción
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// ✅ Middleware para parsear JSON y formularios
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.json()); // Asegura el soporte para JSON
+// ✅ Middleware para parsear JSON
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Soporte para formularios
 
 // ✅ Manejo de errores de JSON inválido
 app.use((err, req, res, next) => {
@@ -46,13 +44,6 @@ app.use('/api/envios', enviosRoutes);
 app.get('/', (req, res) => {
     res.send('API funcionando correctamente');
 });
-
-// ✅ Registro de rutas
-console.log("📌 Rutas cargadas correctamente:");
-console.log("➡️ /api/casos");
-console.log("➡️ /api/comunicaciones");
-console.log("➡️ /api/evaluaciones");
-console.log("➡️ /api/envios");
 
 // ✅ Manejo global de errores
 app.use((err, req, res, next) => {
