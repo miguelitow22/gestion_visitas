@@ -1,7 +1,7 @@
 const axios = require('axios');
 require('dotenv').config();
 
-const WHATSAPP_API_URL = 'https://graph.facebook.com/v17.0';
+const WHATSAPP_API_URL = 'https://graph.facebook.com/v21.0';
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
