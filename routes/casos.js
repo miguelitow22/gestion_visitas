@@ -137,7 +137,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ✅ **Actualizar estado de un caso**
+
 // ✅ **Actualizar estado de un caso**
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
@@ -235,19 +235,23 @@ router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
     }
 });
 
-// ✅ **Obtener un caso por ID**
-router.get('/', async (req, res) => {
+
+// ✅ Obtener un caso específico por ID
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
     try {
-        const { data, error } = await supabase.from('casos').select('*');
+        const { data, error } = await supabase.from('casos').select('*').eq('id', id).maybeSingle();
         if (error) throw error;
+        if (!data) return res.status(404).json({ error: "Caso no encontrado." });
         res.json(data);
     } catch (error) {
-        console.error('❌ Error al obtener los casos:', error);
+        console.error('❌ Error al obtener el caso:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ✅ **Obtener todos los casos**
+
+// ✅ Obtener todos los casos
 router.get('/', async (req, res) => {
     try {
         const { data, error } = await supabase.from('casos').select('*');
