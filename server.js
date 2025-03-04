@@ -18,10 +18,12 @@ app.use((req, res, next) => {
 
 // ✅ Middleware de CORS mejorado
 app.use(cors({
-    origin: 'https://gestion-visitasfr.vercel.app', // ⚠️ Cambiar en producción
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: '*', // Permitir todas las solicitudes (puedes cambiarlo por una lista segura)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Agrega OPTIONS para preflight
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+    credentials: true // Permitir cookies y autenticación si las usas
 }));
+
 
 // ✅ Middleware para parsear JSON
 app.use(express.json());
