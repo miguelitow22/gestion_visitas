@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { enviarCorreo } = require('../services/emailService');
 const { enviarWhatsApp } = require('../services/whatsappService');
 require('dotenv').config();
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -88,18 +89,37 @@ router.post('/', async (req, res) => {
         const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
 
         // 🔹 **Guardar el caso en la base de datos**
-        const { data, error } = await supabase
-            .from('casos')
-            .insert([{
-                id, nombre, documento, telefono, email, estado, tipo_visita, direccion,
-                punto_referencia, fecha_visita, hora_visita, intentos_contacto,
-                motivo_no_programacion, evaluador_email, evaluador_asignado, solicitud, contacto,
-                cliente, cargo, regional,
-                telefonosecundario: telefonoSecundario,
-                telefonoterciario: telefonoTerciario,
-                ultima_interaccion: new Date().toISOString(), evidencia_url: ""
-            }])
-            .select();
+        const { v4: uuidv4 } = require('uuid'); // Asegúrate de importar esto al inicio del archivo
+
+        const nuevoCaso = {
+            id: uuidv4(), // ID interno para la base de datos
+            solicitud, // Este es el ID que se envía a Atlas y Regional
+            nombre,
+            documento,
+            telefono,
+            email,
+            estado,
+            tipo_visita,
+            direccion,
+            punto_referencia,
+            fecha_visita,
+            hora_visita,
+            intentos_contacto,
+            motivo_no_programacion,
+            evaluador_email,
+            evaluador_asignado,
+            contacto,
+            cliente,
+            cargo,
+            regional,
+            telefonosecundario: telefonoSecundario,
+            telefonoterciario: telefonoTerciario,
+            ultima_interaccion: new Date().toISOString(),
+            evidencia_url: ""
+        };
+
+        // 📌 Insertar en la base de datos con el ID interno
+        const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select();
 
         if (error) throw error;
 
@@ -156,7 +176,7 @@ router.put('/:id', async (req, res) => {
         if (error) throw error;
 
         // 📩 Notificaciones
-        const mensajeEstado = `El estado del caso ${id} ha sido actualizado a: ${estado}`;
+        const mensajeEstado = `El estado de su  caso  ha sido actualizado a: ${estado}`;
         await Promise.all([
             enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
             enviarWhatsApp(caso.telefono, mensajeEstado),
