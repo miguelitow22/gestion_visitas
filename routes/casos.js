@@ -181,8 +181,8 @@ router.put('/:id', async (req, res) => {
             enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
             enviarWhatsApp(caso.telefono, mensajeEstado),
             enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado),
-            enviarCorreo('atlas@empresa.com', 'Actualización de Caso', mensajeEstado),
-            enviarWhatsApp('+573001234567', `El estado del caso ${id} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
+            enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', mensajeEstado),
+            enviarWhatsApp('+573146249096', `El estado del caso ${id} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
         ]);
 
         res.json({ message: 'Caso actualizado con éxito', data });
