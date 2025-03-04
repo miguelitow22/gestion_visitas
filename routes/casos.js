@@ -181,7 +181,7 @@ router.put('/:id', async (req, res) => {
             enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
             enviarWhatsApp(caso.telefono, mensajeEstado),
             enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado),
-            enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', mensajeEstado),
+            enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', mensajeEstado + ` - ID: ${solicitud}`),
             enviarWhatsApp('+573146249096', `El estado del caso ${solicitud} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
         ]);
 
