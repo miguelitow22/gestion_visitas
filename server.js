@@ -36,6 +36,7 @@ app.use((err, req, res, next) => {
     }
     next();
 });
+app.options('*', cors()); // Permitir solicitudes preflight en todas las rutas
 
 // ✅ Rutas
 app.use('/api/casos', casosRoutes);
