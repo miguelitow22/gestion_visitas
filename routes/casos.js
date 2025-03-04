@@ -141,8 +141,8 @@ router.post('/', async (req, res) => {
             telefonoRegional ? enviarWhatsApp(telefonoRegional, `Caso asignado en ${regional} para ${cliente} el ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
 
             // 📩 **Atlas (central)**
-            enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado', `Nuevo caso con ID: ${id}, evaluado: ${nombre}.`),
-            enviarWhatsApp('+573001234567', `Nuevo caso creado con ID: ${id}, evaluado: ${nombre}.`) // Número de WhatsApp de Atlas
+            enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado', `Nuevo caso con ID: ${solicitud}, evaluado: ${nombre}.`),
+            enviarWhatsApp('+573001234567', `Nuevo caso creado con ID: ${solicitud}, evaluado: ${nombre}.`) // Número de WhatsApp de Atlas
         ]);
 
         res.json({ message: '✅ Caso creado con éxito', data });
@@ -182,7 +182,7 @@ router.put('/:id', async (req, res) => {
             enviarWhatsApp(caso.telefono, mensajeEstado),
             enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado),
             enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', mensajeEstado),
-            enviarWhatsApp('+573146249096', `El estado del caso ${id} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
+            enviarWhatsApp('+573146249096', `El estado del caso ${solicitud} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
         ]);
 
         res.json({ message: 'Caso actualizado con éxito', data });
