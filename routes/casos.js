@@ -126,24 +126,23 @@ router.post('/', async (req, res) => {
         console.log("✅ Caso guardado en la base de datos:", data);
 
         // ✅ **Notificaciones**
-        await Promise.all([
-            // 📩 **Evaluado**
-            enviarCorreo(email, 'Confirmación de Caso', `Estimado/a ${nombre}, su caso ha sido creado para ${fecha_visita} a las ${hora_visita}.`),
-            enviarWhatsApp(telefono, `Su caso ha sido registrado para ${fecha_visita} a las ${hora_visita}.`),
-            enviarCorreo(email, "Formulario de Visita", `Complete el formulario en: ${linkFormulario}`),
-            enviarWhatsApp(telefono, `Complete el formulario en: ${linkFormulario}`),
+        // 📩 **Evaluador**
+        await enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le asignó un caso con ID: ${solicitud} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`);
 
-            // 📩 **Evaluador**
-            enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le asignó un caso con ID: ${id} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`),
+        // 📩 **Regional (Si aplica)**
+        if (emailRegional) {
+            await enviarCorreo(emailRegional, 'Nuevo Caso en su Regional',
+                `Caso asignado en ${regional} para el cliente ${cliente}, programado para ${fecha_visita} a las ${hora_visita}. ID de la solicitud: ${solicitud}.`);
+        }
+        if (telefonoRegional) {
+            await enviarWhatsApp(telefonoRegional, `Caso asignado en ${regional} para ${cliente} el ${fecha_visita} a las ${hora_visita}. ID de la solicitud: ${solicitud}.`);
+        }
 
-            // 📩 **Regional (Si aplica)**
-            emailRegional ? enviarCorreo(emailRegional, 'Nuevo Caso en su Regional', `Caso asignado en ${regional} para el cliente ${cliente}, programado para ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
-            telefonoRegional ? enviarWhatsApp(telefonoRegional, `Caso asignado en ${regional} para ${cliente} el ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
+        // 📩 **Atlas (central)**
+        await enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado',
+            `Nuevo caso con ID: ${solicitud}, evaluado: ${nombre}.`);
+        await enviarWhatsApp('+573146249096', `Nuevo caso creado con ID: ${solicitud}, evaluado: ${nombre}.`);
 
-            // 📩 **Atlas (central)**
-            enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado', `Nuevo caso con ID: ${solicitud}, evaluado: ${nombre}.`),
-            enviarWhatsApp('+573001234567', `Nuevo caso creado con ID: ${solicitud}, evaluado: ${nombre}.`) // Número de WhatsApp de Atlas
-        ]);
 
         res.json({ message: '✅ Caso creado con éxito', data });
 
