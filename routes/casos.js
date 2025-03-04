@@ -71,8 +71,6 @@ router.post('/', async (req, res) => {
         const id = uuidv4();
 
         // 📌 **Obtener datos de la regional**
-        const emailRegional = regionales[regional]?.email || null;
-        const telefonoRegional = telefonoSecundario || telefonoTerciario || regionales[regional]?.telefono || null;
         const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
 
         // 📌 **Guardar el caso en la base de datos**
@@ -114,24 +112,21 @@ router.post('/', async (req, res) => {
 
         console.log("✅ Caso insertado en la BD:", casoGuardado);
 
-        // ✅ **Notificaciones con manejo de errores**
         try {
-            await enviarCorreo(evaluador_email, 'Nuevo Caso Asignado',
-                `Se le asignó un caso con ID: ${casoGuardado.solicitud} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`
+            // ✅ Notificación al evaluado
+            await enviarCorreo(email, 'Confirmación de Caso',
+                `Estimado/a ${nombre}, su caso ha sido creado para ${fecha_visita} a las ${hora_visita}. 
+                Por favor complete el siguiente formulario: ${linkFormulario}`
             );
-        } catch (err) {
-            console.error("❌ Error al enviar correo al evaluador:", err.message);
-        }
 
-        try {
-            await enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado',
-                `Nuevo caso con ID: ${casoGuardado.solicitud}, evaluado: ${nombre}.`
-            );
-            await enviarWhatsApp('+573146249096',
-                `Nuevo caso creado con ID: ${casoGuardado.solicitud}, evaluado: ${nombre}.`
-            );
+            if (telefono) {
+                await enviarWhatsApp(telefono,
+                    `Su caso ha sido registrado para ${fecha_visita} a las ${hora_visita}. 
+                    Complete el formulario aquí: ${linkFormulario}`
+                );
+            }
         } catch (err) {
-            console.error("❌ Error al enviar notificación a Atlas:", err.message);
+            console.error("❌ Error en la notificación al evaluado:", err.message);
         }
 
         res.json({ message: '✅ Caso creado con éxito', data });
@@ -142,6 +137,7 @@ router.post('/', async (req, res) => {
     }
 });
 
+// ✅ **Actualizar estado de un caso**
 // ✅ **Actualizar estado de un caso**
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
@@ -164,16 +160,6 @@ router.put('/:id', async (req, res) => {
 
         if (error) throw error;
 
-        // 📩 Notificaciones
-        const mensajeEstado = `El estado de su  caso  ha sido actualizado a: ${estado}`;
-        await Promise.all([
-            enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
-            enviarWhatsApp(caso.telefono, mensajeEstado),
-            enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado),
-            enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', mensajeEstado + ` - Caso ${caso.solicitud}`),
-            enviarWhatsApp('+573146249096', `El estado del caso ${casoGuardado.solicitud} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
-        ]);
-
         res.json({ message: 'Caso actualizado con éxito', data });
 
     } catch (error) {
@@ -181,6 +167,7 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 // ✅ **Subir evidencia**
 router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
@@ -249,15 +236,13 @@ router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
 });
 
 // ✅ **Obtener un caso por ID**
-router.get('/:id', async (req, res) => {
-    const { id } = req.params;
+router.get('/', async (req, res) => {
     try {
-        const { data, error } = await supabase.from('casos').select('*').eq('id', id).maybeSingle();
+        const { data, error } = await supabase.from('casos').select('*');
         if (error) throw error;
-        if (!data) return res.status(404).json({ error: "Caso no encontrado." });
         res.json(data);
     } catch (error) {
-        console.error('❌ Error al obtener el caso:', error);
+        console.error('❌ Error al obtener los casos:', error);
         res.status(500).json({ error: error.message });
     }
 });
