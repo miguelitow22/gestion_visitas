@@ -18,7 +18,7 @@ const upload = multer({
 
 // ✅ **Constantes con los correos y teléfonos de las regionales**
 const regionales = {
-    "Norte": { email: "regionl.norte@empresa.com", telefono: "+573001112233" },
+    "Norte": { email: "regional.norte@empresa.com", telefono: "+573001112233" },
     "Sur": { email: "regional.sur@empresa.com", telefono: "+573002223344" },
     "Centro": { email: "regional.centro@empresa.com", telefono: "+573003334455" }
 };
@@ -40,22 +40,19 @@ const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 // ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
     if (!req.body) {
-        console.error("❌ Error: No se recibió un cuerpo en la solicitud.");
         return res.status(400).json({ error: "No se recibió un cuerpo en la solicitud." });
     }
 
     console.log("📌 Recibiendo datos en backend:", req.body);
 
     const {
-        id, nombre, documento, telefono, email, estado, tipo_visita, direccion,
+        solicitud, nombre, documento, telefono, email, estado, tipo_visita, direccion,
         punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
-        solicitud = "", contacto = "", cliente = "", cargo = "", regional,
-        telefonoSecundario = "", telefonoTerciario = ""
+        contacto, cliente, cargo, regional, telefonoSecundario = "", telefonoTerciario = ""
     } = req.body;
 
-    if (!id || !nombre || !telefono || !email || !estado || !evaluador_email || !regional) {
-        console.error("❌ Error: Falta regional u otro dato obligatorio.");
+    if (!solicitud || !nombre || !telefono || !email || !estado || !evaluador_email || !regional) {
         return res.status(400).json({ error: 'Datos obligatorios faltantes (incluyendo regional).' });
     }
 
@@ -65,35 +62,23 @@ router.post('/', async (req, res) => {
     if (!validarEmail(email) || !validarEmail(evaluador_email)) {
         return res.status(400).json({ error: 'Correo electrónico no válido' });
     }
-
     if (!validarTelefono(telefono)) {
         return res.status(400).json({ error: 'Número de teléfono no válido' });
     }
 
     try {
-        const { data: casoExistente } = await supabase
-            .from('casos')
-            .select('id')
-            .eq('id', id)
-            .maybeSingle();
-
-        if (casoExistente) {
-            return res.status(400).json({ error: '❌ El ID del caso ya existe.' });
-        }
+        // 📌 **Generar un ID único para el caso**
+        const id = uuidv4();
 
         // 📌 **Obtener datos de la regional**
         const emailRegional = regionales[regional]?.email || null;
         const telefonoRegional = telefonoSecundario || telefonoTerciario || regionales[regional]?.telefono || null;
-
-        // 📌 **Obtener enlace de formulario**
         const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
 
-        // 🔹 **Guardar el caso en la base de datos**
-        const { v4: uuidv4 } = require('uuid'); // Asegúrate de importar esto al inicio del archivo
-
+        // 📌 **Guardar el caso en la base de datos**
         const nuevoCaso = {
-            id: uuidv4(), // ID interno para la base de datos
-            solicitud, // Este es el ID que se envía a Atlas y Regional
+            id,
+            solicitud,
             nombre,
             documento,
             telefono,
@@ -118,27 +103,36 @@ router.post('/', async (req, res) => {
             evidencia_url: ""
         };
 
-        // 📌 Insertar en la base de datos con el ID interno
-        const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select();
+        const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select('*');
 
         if (error) throw error;
+        const casoGuardado = data[0];
 
-        console.log("✅ Caso guardado en la base de datos:", data);
+        if (!casoGuardado) {
+            return res.status(500).json({ error: "No se pudo recuperar la solicitud después de la inserción." });
+        }
 
-        // ✅ **Notificaciones**
-        // 📩 **Evaluador**
-        await enviarCorreo(evaluador_email, 'Nuevo Caso Asignado',
-            `Se le asignó un caso con ID: ${solicitud} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`
-        );
+        console.log("✅ Caso insertado en la BD:", casoGuardado);
 
-        // 📩 **Atlas (central)**
-        await enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado',
-            `Nuevo caso con ID: ${solicitud}, evaluado: ${nombre}.`
-        );
-        await enviarWhatsApp('+573001234567',
-            `Nuevo caso creado con ID: ${solicitud}, evaluado: ${nombre}.`
-        );
+        // ✅ **Notificaciones con manejo de errores**
+        try {
+            await enviarCorreo(evaluador_email, 'Nuevo Caso Asignado',
+                `Se le asignó un caso con ID: ${casoGuardado.solicitud} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`
+            );
+        } catch (err) {
+            console.error("❌ Error al enviar correo al evaluador:", err.message);
+        }
 
+        try {
+            await enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado',
+                `Nuevo caso con ID: ${casoGuardado.solicitud}, evaluado: ${nombre}.`
+            );
+            await enviarWhatsApp('+573001234567',
+                `Nuevo caso creado con ID: ${casoGuardado.solicitud}, evaluado: ${nombre}.`
+            );
+        } catch (err) {
+            console.error("❌ Error al enviar notificación a Atlas:", err.message);
+        }
 
         res.json({ message: '✅ Caso creado con éxito', data });
 
