@@ -162,6 +162,30 @@ router.put('/:id', async (req, res) => {
 
         res.json({ message: 'Caso actualizado con éxito', data });
 
+        
+        const mensajeEstado = `🔔 El estado de su caso ha sido actualizado a: ${estado}`;
+        
+        try {
+            // 📩 **Notificar al evaluado**
+            await enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado);
+            await enviarWhatsApp(caso.telefono, mensajeEstado);
+
+            // 📩 **Notificar al evaluador si está asignado**
+            if (caso.evaluador_email) {
+                await enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado);
+            }
+
+            // 📩 **Notificar a Atlas**
+            await enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', `${mensajeEstado} - Caso ${caso.solicitud}`);
+            await enviarWhatsApp('+573146249096', `El estado del caso ${caso.solicitud} ha sido actualizado a: ${estado}`);
+            
+        } catch (notificacionError) {
+            console.error("❌ Error en las notificaciones:", notificacionError.message);
+        }
+
+        res.json({ message: '✅ Caso actualizado con éxito', data });
+        
+        
     } catch (error) {
         console.error('❌ Error al actualizar el caso:', error);
         res.status(500).json({ error: error.message });
