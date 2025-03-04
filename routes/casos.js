@@ -124,10 +124,10 @@ router.post('/', async (req, res) => {
         }
 
         try {
-            await enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado',
+            await enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado',
                 `Nuevo caso con ID: ${casoGuardado.solicitud}, evaluado: ${nombre}.`
             );
-            await enviarWhatsApp('+573001234567',
+            await enviarWhatsApp('+573146249096',
                 `Nuevo caso creado con ID: ${casoGuardado.solicitud}, evaluado: ${nombre}.`
             );
         } catch (err) {
@@ -170,7 +170,7 @@ router.put('/:id', async (req, res) => {
             enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
             enviarWhatsApp(caso.telefono, mensajeEstado),
             enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado),
-            enviarCorreo('atlas@empresa.com', 'Actualización de Caso', mensajeEstado),
+            enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', mensajeEstado + ` - Caso ${caso.solicitud}`),
             enviarWhatsApp('+573146249096', `El estado del caso ${casoGuardado.solicitud} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
         ]);
 
