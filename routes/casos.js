@@ -18,7 +18,7 @@ const upload = multer({
 
 // ✅ **Constantes con los correos y teléfonos de las regionales**
 const regionales = {
-    "Norte": { email: "regional.norte@empresa.com", telefono: "+573001112233" },
+    "Norte": { email: "miguelopsal@gmail.com", telefono: "+573146249096" },
     "Sur": { email: "regional.sur@empresa.com", telefono: "+573002223344" },
     "Centro": { email: "regional.centro@empresa.com", telefono: "+573003334455" }
 };
@@ -141,7 +141,7 @@ router.post('/', async (req, res) => {
             telefonoRegional ? enviarWhatsApp(telefonoRegional, `Caso asignado en ${regional} para ${cliente} el ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
 
             // 📩 **Atlas (central)**
-            enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado', `Nuevo caso con ID: ${id}, evaluado: ${nombre}.`),
+            enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado', `Nuevo caso con ID: ${id}, evaluado: ${nombre}.`),
             enviarWhatsApp('+573001234567', `Nuevo caso creado con ID: ${id}, evaluado: ${nombre}.`) // Número de WhatsApp de Atlas
         ]);
 
