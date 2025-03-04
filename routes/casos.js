@@ -18,7 +18,7 @@ const upload = multer({
 
 // ✅ **Constantes con los correos y teléfonos de las regionales**
 const regionales = {
-    "Norte": { email: "regional.norte@empresa.com", telefono: "+573001112233" },
+    "Norte": { email: "regionl.norte@empresa.com", telefono: "+573001112233" },
     "Sur": { email: "regional.sur@empresa.com", telefono: "+573002223344" },
     "Centro": { email: "regional.centro@empresa.com", telefono: "+573003334455" }
 };
