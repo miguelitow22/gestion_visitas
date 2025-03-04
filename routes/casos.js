@@ -156,7 +156,7 @@ router.put('/:id', async (req, res) => {
         if (error) throw error;
 
         // 📩 Notificaciones
-        const mensajeEstado = `El estado del caso ${id} ha sido actualizado a: ${estado}`;
+        const mensajeEstado = `El estado de su  caso  ha sido actualizado a: ${estado}`;
         await Promise.all([
             enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
             enviarWhatsApp(caso.telefono, mensajeEstado),
