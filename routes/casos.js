@@ -4,7 +4,6 @@ const { createClient } = require('@supabase/supabase-js');
 const { enviarCorreo } = require('../services/emailService');
 const { enviarWhatsApp } = require('../services/whatsappService');
 require('dotenv').config();
-const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -18,7 +17,7 @@ const upload = multer({
 
 // ✅ **Constantes con los correos y teléfonos de las regionales**
 const regionales = {
-    "Norte": { email: "miguelopsal@gmail.com", telefono: "+573146249096" },
+    "Norte": { email: "regional.norte@empresa.com", telefono: "+573001112233" },
     "Sur": { email: "regional.sur@empresa.com", telefono: "+573002223344" },
     "Centro": { email: "regional.centro@empresa.com", telefono: "+573003334455" }
 };
@@ -89,60 +88,42 @@ router.post('/', async (req, res) => {
         const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
 
         // 🔹 **Guardar el caso en la base de datos**
-        const { v4: uuidv4 } = require('uuid'); // Asegúrate de importar esto al inicio del archivo
-
-        const nuevoCaso = {
-            id: uuidv4(), // ID interno para la base de datos
-            solicitud, // Este es el ID que se envía a Atlas y Regional
-            nombre,
-            documento,
-            telefono,
-            email,
-            estado,
-            tipo_visita,
-            direccion,
-            punto_referencia,
-            fecha_visita,
-            hora_visita,
-            intentos_contacto,
-            motivo_no_programacion,
-            evaluador_email,
-            evaluador_asignado,
-            contacto,
-            cliente,
-            cargo,
-            regional,
-            telefonosecundario: telefonoSecundario,
-            telefonoterciario: telefonoTerciario,
-            ultima_interaccion: new Date().toISOString(),
-            evidencia_url: ""
-        };
-
-        // 📌 Insertar en la base de datos con el ID interno
-        const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select();
+        const { data, error } = await supabase
+            .from('casos')
+            .insert([{
+                id, nombre, documento, telefono, email, estado, tipo_visita, direccion,
+                punto_referencia, fecha_visita, hora_visita, intentos_contacto,
+                motivo_no_programacion, evaluador_email, evaluador_asignado, solicitud, contacto,
+                cliente, cargo, regional,
+                telefonosecundario: telefonoSecundario,
+                telefonoterciario: telefonoTerciario,
+                ultima_interaccion: new Date().toISOString(), evidencia_url: ""
+            }])
+            .select();
 
         if (error) throw error;
 
         console.log("✅ Caso guardado en la base de datos:", data);
 
         // ✅ **Notificaciones**
-        // 📩 **Evaluador**
-        await enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le asignó un caso con ID: ${solicitud} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`);
+        await Promise.all([
+            // 📩 **Evaluado**
+            enviarCorreo(email, 'Confirmación de Caso', `Estimado/a ${nombre}, su caso ha sido creado para ${fecha_visita} a las ${hora_visita}.`),
+            enviarWhatsApp(telefono, `Su caso ha sido registrado para ${fecha_visita} a las ${hora_visita}.`),
+            enviarCorreo(email, "Formulario de Visita", `Complete el formulario en: ${linkFormulario}`),
+            enviarWhatsApp(telefono, `Complete el formulario en: ${linkFormulario}`),
 
-        // 📩 **Regional (Si aplica)**
-        if (emailRegional) {
-            await enviarCorreo(emailRegional, 'Nuevo Caso en su Regional',
-                `Caso asignado en ${regional} para el cliente ${cliente}, programado para ${fecha_visita} a las ${hora_visita}. ID de la solicitud: ${solicitud}.`);
-        }
-        if (telefonoRegional) {
-            await enviarWhatsApp(telefonoRegional, `Caso asignado en ${regional} para ${cliente} el ${fecha_visita} a las ${hora_visita}. ID de la solicitud: ${solicitud}.`);
-        }
+            // 📩 **Evaluador**
+            enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', `Se le asignó un caso con ID: ${id} en ${fecha_visita} a las ${hora_visita}. Dirección: ${direccion}.`),
 
-        // 📩 **Atlas (central)**
-        await enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado',
-            `Nuevo caso con ID: ${solicitud}, evaluado: ${nombre}.`);
-        await enviarWhatsApp('+573146249096', `Nuevo caso creado con ID: ${solicitud}, evaluado: ${nombre}.`);
+            // 📩 **Regional (Si aplica)**
+            emailRegional ? enviarCorreo(emailRegional, 'Nuevo Caso en su Regional', `Caso asignado en ${regional} para el cliente ${cliente}, programado para ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
+            telefonoRegional ? enviarWhatsApp(telefonoRegional, `Caso asignado en ${regional} para ${cliente} el ${fecha_visita} a las ${hora_visita}.`) : Promise.resolve(),
 
+            // 📩 **Atlas (central)**
+            enviarCorreo('atlas@empresa.com', 'Nuevo Caso Creado', `Nuevo caso con ID: ${id}, evaluado: ${nombre}.`),
+            enviarWhatsApp('+573001234567', `Nuevo caso creado con ID: ${id}, evaluado: ${nombre}.`) // Número de WhatsApp de Atlas
+        ]);
 
         res.json({ message: '✅ Caso creado con éxito', data });
 
@@ -175,13 +156,13 @@ router.put('/:id', async (req, res) => {
         if (error) throw error;
 
         // 📩 Notificaciones
-        const mensajeEstado = `El estado de su  caso  ha sido actualizado a: ${estado}`;
+        const mensajeEstado = `El estado del caso ${id} ha sido actualizado a: ${estado}`;
         await Promise.all([
             enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado),
             enviarWhatsApp(caso.telefono, mensajeEstado),
             enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado),
-            enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', mensajeEstado + ` - ID: ${solicitud}`),
-            enviarWhatsApp('+573146249096', `El estado del caso ${solicitud} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
+            enviarCorreo('atlas@empresa.com', 'Actualización de Caso', mensajeEstado),
+            enviarWhatsApp('+573001234567', `El estado del caso ${id} ha sido actualizado a: ${estado}`) // Número de WhatsApp de Atlas
         ]);
 
         res.json({ message: 'Caso actualizado con éxito', data });
