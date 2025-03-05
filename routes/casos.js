@@ -51,11 +51,15 @@ router.post('/', async (req, res) => {
         direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
         contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
-        observaciones = ""
+        observaciones = "", seContacto
     } = req.body;
 
-    if (!solicitud || !nombre || !telefono || !estado || !evaluador_email) {
+    if (!solicitud || !nombre || !telefono || !estado) {
         return res.status(400).json({ error: 'Datos obligatorios faltantes.' });
+    }
+
+    if (seContacto === "Sí" && !evaluador_email) {
+        return res.status(400).json({ error: 'El evaluador es obligatorio cuando se ha contactado al evaluado.' });
     }
 
     if (email && !validarEmail(email)) {
@@ -75,7 +79,8 @@ router.post('/', async (req, res) => {
             id, solicitud, nombre, documento, telefono, email, estado,
             tipo_visita, ciudad, direccion, punto_referencia, fecha_visita,
             hora_visita, intentos_contacto, motivo_no_programacion,
-            evaluador_email, evaluador_asignado, contacto, cliente, cargo,
+            evaluador_email: seContacto === "Sí" ? evaluador_email : null,
+            evaluador_asignado, contacto, cliente, cargo,
             regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
             telefonoterciario: telefonoTerciario, observaciones,
             ultima_interaccion: new Date().toISOString(), evidencia_url: ""
@@ -110,7 +115,7 @@ router.post('/', async (req, res) => {
             await enviarWhatsApp(telefono, `Su caso ha sido registrado. Complete el formulario aquí: ${linkFormulario}`);
 
             // Notificación al evaluador
-            if (evaluador_email) {
+            if (seContacto === "Sí" && evaluador_email) {
                 await enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', mensaje);
             }
 
@@ -152,11 +157,10 @@ router.put('/:id', async (req, res) => {
 
         if (error) throw error;
 
-        res.json({ message: 'Caso actualizado con éxito', data });
+        res.json({ message: '✅ Caso actualizado con éxito', data });
 
-        
         const mensajeEstado = `🔔 El estado de su caso ha sido actualizado a: ${estado}`;
-        
+
         try {
             // 📩 **Notificar al evaluado**
             await enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado);
@@ -170,14 +174,11 @@ router.put('/:id', async (req, res) => {
             // 📩 **Notificar a Atlas**
             await enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', `${mensajeEstado} - Caso ${caso.solicitud}`);
             await enviarWhatsApp('+573146249096', `El estado del caso ${caso.solicitud} ha sido actualizado a: ${estado}`);
-            
+
         } catch (notificacionError) {
             console.error("❌ Error en las notificaciones:", notificacionError.message);
         }
 
-        res.json({ message: '✅ Caso actualizado con éxito', data });
-        
-        
     } catch (error) {
         console.error('❌ Error al actualizar el caso:', error);
         res.status(500).json({ error: error.message });
