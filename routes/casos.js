@@ -46,20 +46,18 @@ router.post('/', async (req, res) => {
     console.log("📌 Recibiendo datos en backend:", req.body);
 
     const {
-        solicitud, nombre, documento, telefono, email, estado, tipo_visita, direccion,
-        punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
+        solicitud, nombre, documento, telefono, email = "", estado, tipo_visita, ciudad = "",
+        direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
-        contacto, cliente, cargo, regional, telefonoSecundario = "", telefonoTerciario = ""
+        contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
+        observaciones = ""
     } = req.body;
 
-    if (!solicitud || !nombre || !telefono || !email || !estado || !evaluador_email || !regional) {
-        return res.status(400).json({ error: 'Datos obligatorios faltantes (incluyendo regional).' });
+    if (!solicitud || !nombre || !telefono || !estado || !evaluador_email) {
+        return res.status(400).json({ error: 'Datos obligatorios faltantes.' });
     }
 
-    console.log("📌 Regional recibido en backend:", regional);
-
-    // Validaciones
-    if (!validarEmail(email) || !validarEmail(evaluador_email)) {
+    if (email && !validarEmail(email)) {
         return res.status(400).json({ error: 'Correo electrónico no válido' });
     }
     if (!validarTelefono(telefono)) {
@@ -70,35 +68,15 @@ router.post('/', async (req, res) => {
         // 📌 **Generar un ID único para el caso**
         const id = uuidv4();
 
-        // 📌 **Obtener datos de la regional**
-        const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
-
         // 📌 **Guardar el caso en la base de datos**
         const nuevoCaso = {
-            id,
-            solicitud,
-            nombre,
-            documento,
-            telefono,
-            email,
-            estado,
-            tipo_visita,
-            direccion,
-            punto_referencia,
-            fecha_visita,
-            hora_visita,
-            intentos_contacto,
-            motivo_no_programacion,
-            evaluador_email,
-            evaluador_asignado,
-            contacto,
-            cliente,
-            cargo,
-            regional,
-            telefonosecundario: telefonoSecundario,
-            telefonoterciario: telefonoTerciario,
-            ultima_interaccion: new Date().toISOString(),
-            evidencia_url: ""
+            id, solicitud, nombre, documento, telefono, email, estado,
+            tipo_visita, ciudad, direccion, punto_referencia, fecha_visita,
+            hora_visita, intentos_contacto, motivo_no_programacion,
+            evaluador_email, evaluador_asignado, contacto, cliente, cargo,
+            regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
+            telefonoterciario: telefonoTerciario, observaciones,
+            ultima_interaccion: new Date().toISOString(), evidencia_url: ""
         };
 
         const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select('*');
@@ -141,7 +119,7 @@ router.post('/', async (req, res) => {
 // ✅ **Actualizar estado de un caso**
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    let { estado, intentos_contacto } = req.body;
+    let { estado, intentos_contacto, observaciones = "" } = req.body;
 
     const estadosValidos = ["pendiente", "en curso", "completado", "standby"];
     if (!estadosValidos.includes(estado)) {
@@ -154,7 +132,7 @@ router.put('/:id', async (req, res) => {
 
         const { data, error } = await supabase
             .from('casos')
-            .update({ estado, intentos_contacto, ultima_interaccion: new Date().toISOString() })
+            .update({ estado, intentos_contacto, observaciones, ultima_interaccion: new Date().toISOString() })
             .eq('id', id)
             .select();
 
