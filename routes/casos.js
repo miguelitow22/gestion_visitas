@@ -92,21 +92,33 @@ router.post('/', async (req, res) => {
 
         console.log("✅ Caso insertado en la BD:", casoGuardado);
 
-        try {
-            // ✅ Notificación al evaluado
-            await enviarCorreo(email, 'Confirmación de Caso',
-                `Estimado/a ${nombre}, su caso ha sido creado para ${fecha_visita} a las ${hora_visita}. 
-                Por favor complete el siguiente formulario: ${linkFormulario}`
-            );
+        const mensaje = `
+        ✅ Se ha creado un nuevo caso:
+        - Nombre: ${nombre}
+        - Documento: ${documento}
+        - Tipo de Visita: ${tipo_visita}
+        - Fecha: ${fecha_visita}
+        - Hora: ${hora_visita}
+        - Ciudad: ${ciudad}
+        - Dirección: ${direccion}
+        - Formulario: ${linkFormulario}
+        `;
 
-            if (telefono) {
-                await enviarWhatsApp(telefono,
-                    `Su caso ha sido registrado para ${fecha_visita} a las ${hora_visita}. 
-                    Complete el formulario aquí: ${linkFormulario}`
-                );
+        try {
+            // Notificación al evaluado
+            await enviarCorreo(email, 'Confirmación de Caso', `Estimado/a ${nombre}, complete el formulario aquí: ${linkFormulario}`);
+            await enviarWhatsApp(telefono, `Su caso ha sido registrado. Complete el formulario aquí: ${linkFormulario}`);
+
+            // Notificación al evaluador
+            if (evaluador_email) {
+                await enviarCorreo(evaluador_email, 'Nuevo Caso Asignado', mensaje);
             }
+
+            // Notificación a Atlas
+            await enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado', mensaje);
+            await enviarWhatsApp('+573146249096', mensaje);
         } catch (err) {
-            console.error("❌ Error en la notificación al evaluado:", err.message);
+            console.error("❌ Error en las notificaciones:", err.message);
         }
 
         res.json({ message: '✅ Caso creado con éxito', data });
