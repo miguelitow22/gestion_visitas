@@ -79,7 +79,7 @@ router.post('/', async (req, res) => {
             id, solicitud, nombre, documento, telefono, email, estado,
             tipo_visita, ciudad, direccion, punto_referencia, fecha_visita,
             hora_visita, intentos_contacto, motivo_no_programacion,
-            evaluador_email: seContacto === "Sí" ? evaluador_email : null,
+            evaluador_email: seContacto === "Sí" ? evaluador_email : "",
             evaluador_asignado, contacto, cliente, cargo,
             regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
             telefonoterciario: telefonoTerciario, observaciones,
