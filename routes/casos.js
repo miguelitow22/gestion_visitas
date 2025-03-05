@@ -30,7 +30,8 @@ const formularios = {
     "Ingreso Bicicletas HA": "https://formulario.com/bicicletas-ingreso",
     "Seguimiento Bicicletas HA": "https://formulario.com/bicicletas-seguimiento",
     "Atlas": "https://formulario.com/atlas",
-    "Pic Colombia": "https://formulario.com/pic-colombia"
+    "Pic Colombia": "https://formulario.com/pic-colombia",
+    "Virtual": "https://formulario.com/virtual"
 };
 
 // ✅ **Validaciones de datos**
@@ -67,6 +68,7 @@ router.post('/', async (req, res) => {
     try {
         // 📌 **Generar un ID único para el caso**
         const id = uuidv4();
+        const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
 
         // 📌 **Guardar el caso en la base de datos**
         const nuevoCaso = {
