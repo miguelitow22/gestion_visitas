@@ -38,6 +38,12 @@ const formularios = {
 const validarEmail = email => email ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) : true;
 const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
+// ✅ **Lista de analistas**
+const analistas = [
+    { nombre: "Carlos", correo: "carlos@empresa.com", telefono: "+573001234567" },
+    { nombre: "María", correo: "maria@empresa.com", telefono: "+573002345678" },
+];
+
 // ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
     if (!req.body) {
@@ -51,7 +57,7 @@ router.post('/', async (req, res) => {
         direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
         contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
-        observaciones = "", seContacto
+        observaciones = "", seContacto, analista
     } = req.body;
 
     if (!solicitud || !nombre || !telefono || !estado) {
@@ -121,6 +127,20 @@ router.post('/', async (req, res) => {
             - Intentos de contacto: ${intentos_contacto}
             - Motivo: ${motivo_no_programacion}
             `;
+
+            if (analista) {
+                const analistaSeleccionado = analistas.find(a => a.nombre === analista);
+                if (analistaSeleccionado) {
+                    const mensajeAnalista = `⚠️ No se logró contactar al evaluado:
+                    - Nombre: ${nombre}
+                    - Documento: ${documento}
+                    - Intentos de contacto: ${intentos_contacto}
+                    - Motivo: ${motivo_no_programacion}`;
+                    
+                    await enviarCorreo(analistaSeleccionado.correo, 'Caso No Contactado', mensajeAnalista);
+                    await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
+                }
+            }
         }
 
         try {
