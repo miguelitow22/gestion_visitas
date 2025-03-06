@@ -35,7 +35,7 @@ const formularios = {
 };
 
 // ✅ **Validaciones de datos**
-const validarEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const validarEmail = email => email ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) : true;
 const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
 // ✅ **Crear un nuevo caso**
@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
     console.log("📌 Recibiendo datos en backend:", req.body);
 
     const {
-        solicitud, nombre, documento, telefono, email = "", estado, tipo_visita, ciudad = "",
+        solicitud, nombre, documento, telefono, email = null, estado, tipo_visita, ciudad = "",
         direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
         contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
@@ -65,6 +65,7 @@ router.post('/', async (req, res) => {
     if (email && !validarEmail(email)) {
         return res.status(400).json({ error: 'Correo electrónico no válido' });
     }
+
     if (!validarTelefono(telefono)) {
         return res.status(400).json({ error: 'Número de teléfono no válido' });
     }
@@ -101,14 +102,15 @@ router.post('/', async (req, res) => {
         if (seContacto === "Sí") {
             mensaje = `
             ✅ Se ha creado un nuevo caso:
+            - Solicitud: ${solicitud}
             - Nombre: ${nombre}
             - Documento: ${documento}
             - Tipo de Visita: ${tipo_visita}
-            - Fecha: ${fecha_visita}
-            - Hora: ${hora_visita}
-            - Ciudad: ${ciudad}
-            - Dirección: ${direccion}
-            - Evaluador: ${evaluador_asignado}
+            - Fecha: ${fecha_visita || "Por definir"}
+            - Hora: ${hora_visita || "Por definir"}
+            - Ciudad: ${ciudad || "No especificada"}
+            - Dirección: ${direccion || "No especificada"}
+            - Evaluador: ${evaluador_asignado || "No asignado"}
             - Formulario: ${linkFormulario}
             `;
         } else {
@@ -123,7 +125,9 @@ router.post('/', async (req, res) => {
 
         try {
             // Notificación al evaluado
-            await enviarCorreo(email, 'Confirmación de Caso', `Estimado/a ${nombre}, complete el formulario aquí: ${linkFormulario}`);
+            if (email) {
+                await enviarCorreo(email, 'Confirmación de Caso', `Estimado/a ${nombre}, complete el formulario aquí: ${linkFormulario}`);
+            }            
             await enviarWhatsApp(telefono, `Su caso ha sido registrado. Complete el formulario aquí: ${linkFormulario}`);
 
             // Notificación al evaluador
@@ -134,6 +138,12 @@ router.post('/', async (req, res) => {
             // Notificación a Atlas
             await enviarCorreo('miguelopsal@gmail.com', 'Nuevo Caso Creado', mensaje);
             await enviarWhatsApp('+573146249096', mensaje);
+
+            // Notificación a la regional correspondiente
+            if (regionales[regional]) {
+                await enviarCorreo(regionales[regional].email, `Nuevo Caso en su Regional - Solicitud ${solicitud}`, mensaje);
+                await enviarWhatsApp(regionales[regional].telefono, mensaje);
+            }
         } catch (err) {
             console.error("❌ Error en las notificaciones:", err.message);
         }
@@ -145,7 +155,6 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 // ✅ **Actualizar estado de un caso**
 router.put('/:id', async (req, res) => {
@@ -196,7 +205,6 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 // ✅ **Subir evidencia**
 router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
@@ -264,7 +272,6 @@ router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
     }
 });
 
-
 // ✅ Obtener un caso específico por ID
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
@@ -278,7 +285,6 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 // ✅ Obtener todos los casos
 router.get('/', async (req, res) => {
