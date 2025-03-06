@@ -97,17 +97,29 @@ router.post('/', async (req, res) => {
 
         console.log("✅ Caso insertado en la BD:", casoGuardado);
 
-        const mensaje = `
-        ✅ Se ha creado un nuevo caso:
-        - Nombre: ${nombre}
-        - Documento: ${documento}
-        - Tipo de Visita: ${tipo_visita}
-        - Fecha: ${fecha_visita}
-        - Hora: ${hora_visita}
-        - Ciudad: ${ciudad}
-        - Dirección: ${direccion}
-        - Formulario: ${linkFormulario}
-        `;
+        let mensaje;
+        if (seContacto === "Sí") {
+            mensaje = `
+            ✅ Se ha creado un nuevo caso:
+            - Nombre: ${nombre}
+            - Documento: ${documento}
+            - Tipo de Visita: ${tipo_visita}
+            - Fecha: ${fecha_visita}
+            - Hora: ${hora_visita}
+            - Ciudad: ${ciudad}
+            - Dirección: ${direccion}
+            - Evaluador: ${evaluador_asignado}
+            - Formulario: ${linkFormulario}
+            `;
+        } else {
+            mensaje = `
+            ⚠️ No se logró contactar al evaluado:
+            - Nombre: ${nombre}
+            - Documento: ${documento}
+            - Intentos de contacto: ${intentos_contacto}
+            - Motivo: ${motivo_no_programacion}
+            `;
+        }
 
         try {
             // Notificación al evaluado
