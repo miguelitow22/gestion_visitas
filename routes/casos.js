@@ -174,7 +174,16 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     let { estado, intentos_contacto, observaciones = "" } = req.body;
 
-    const estadosValidos = ["pendiente", "en curso", "completado", "standby"];
+    const estadosValidos = [
+        "pendiente",
+        "en curso",
+        "programada",
+        "standby",
+        "terminada",
+        "cancelada por evaluado",
+        "cancelada por VerifiK",
+        "cancelada por Atlas"
+      ];      
     if (!estadosValidos.includes(estado)) {
         return res.status(400).json({ error: "Estado no válido." });
     }
