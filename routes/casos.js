@@ -1,10 +1,10 @@
 const express = require('express');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
-const { enviarCorreo } = require('../services/emailService');
-const { enviarWhatsApp } = require('../services/whatsappService');
-require('dotenv').config();
+const { enviarCorreo } = require('../services/emailService'); // Solo una importación
 const { v4: uuidv4 } = require('uuid');
+const { enviarWhatsApp, enviarWhatsAppTemplate } = require('../services/whatsappService');
+require('dotenv').config();
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -21,15 +21,14 @@ const regionales = ["Antioquia", "Caribe", "Centro", "Eje Cafetero", "Nororiente
 
 // ✅ **Formularios por tipo de visita**
 const formularios = {
-    "Ingreso": "https://forms.gle/GdWmReVymyzQLKGn6  ",
-    "Seguimiento": "https://forms.gle/RMiHfRX1VUMCpYdQ7  ",
+    "Ingreso": "https://forms.gle/GdWmReVymyzQLKGn6",
+    "Seguimiento": "https://forms.gle/RMiHfRX1VUMCpYdQ7",
     "Ingreso Bicicletas HA": "https://forms.gle/U54QxgtKBZX9u244A",
     "Seguimiento Bicicletas HA": "https://forms.gle/GTK6Jm6c5v5HkmKp9",
     "Atlas": "https://forms.gle/TNrQY9fhRpZWQFy56",
     "Pic Colombia": "https://forms.gle/rrkhzfu7muDGjgZt6",
     "Virtual": "https://forms.gle/8Z6n6g5sZ8Qv9L6m9prueba"
 };
-
 
 // ✅ **Validaciones de datos**
 const validarEmail = email => email ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) : true;
@@ -45,7 +44,6 @@ const analistas = [
     { nombre: "Henry Medina", correo: "maria@empresa.com", telefono: "+573002345678" },
 ];
 
-
 // ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
     if (!req.body) {
@@ -59,7 +57,7 @@ router.post('/', async (req, res) => {
         direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
         contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
-        observaciones = "", seContacto, analista,barrio = "",evaluador_telefono
+        observaciones = "", seContacto, analista, barrio = "", evaluador_telefono, recontactar
     } = req.body;
 
     if (!solicitud || !nombre || !telefono || !estado) {
@@ -92,11 +90,10 @@ router.post('/', async (req, res) => {
             evaluador_asignado, contacto, cliente, cargo,
             regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
             telefonoterciario: telefonoTerciario, observaciones,
-            ultima_interaccion: new Date().toISOString(), evidencia_url: "",barrio,evaluador_telefono
+            ultima_interaccion: new Date().toISOString(), evidencia_url: "", barrio, evaluador_telefono
         };
 
         const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select('*');
-
         if (error) throw error;
         const casoGuardado = data[0];
 
@@ -106,55 +103,118 @@ router.post('/', async (req, res) => {
 
         console.log("✅ Caso insertado en la BD:", casoGuardado);
         try {
-            // Notificación al evaluado
+            // Notificación al evaluado (seContacto === "Sí")
             if (seContacto === "Sí") {
-                const mensajeEvaluado = `✅ Su visita domiciliaria está programada para:\n📅 Fecha: ${fecha_visita || "Por definir"}\n🕐 Hora: ${hora_visita || "Por definir"}\n📍 Dirección: ${direccion || "No especificada"}\n👤 Evaluador: ${evaluador_asignado || "No asignado"}\n\n⚠️ *Si no puede atender la visita, debe cancelarla con tiempo comunicándose a:*\n📲 WhatsApp: [3176520775](https://wa.me/573176520775)\n📞 Celular: 3152354796  \n📞 Celular: 3023602245  \n📧 Email: verifikhm@gmail.com\n\n📝 *Recomendaciones para la visita:*  \n📌 Cuenta de servicios públicos  \n📌 Diplomas académicos  \n📌 Relación de gastos familiares  \n📌 Relación del historial laboral  \n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use los datos indicados arriba.*`;
-
+                const templateName = "visita_domiciliaria_programada";
+                const languageCode = "es";
+                const params = [
+                    fecha_visita || "Por definir",    // {{1}} Fecha
+                    hora_visita || "Por definir",       // {{2}} Hora
+                    direccion || "No especificada",       // {{3}} Dirección
+                    evaluador_asignado || "No asignado"   // {{4}} Evaluador
+                ];
                 if (email) {
-                    await enviarCorreo(email, 'Visita Domiciliaria Programada', mensajeEvaluado);
+                    await enviarCorreo(
+                        email,
+                        'Visita Domiciliaria Programada',
+                        `Su visita domiciliaria está programada para el ${fecha_visita || "Por definir"} a las ${hora_visita || "Por definir"}.`
+                    );
                 }
-
-                await enviarWhatsApp(telefono, mensajeEvaluado);
+                await enviarWhatsAppTemplate(telefono, templateName, languageCode, params);
             }
 
-            // Notificación al evaluador
-
+            // Notificación al evaluador (seContacto === "Sí")
             if (seContacto === "Sí") {
-                const mensajeEvaluador = `✅ Le fue asignada la solicitud: ${solicitud}\nDebe realizar dicha visita en:\n📍 Ciudad: ${ciudad || "No especificada"}\n🏠 Dirección: ${direccion || "No especificada"}\n📌 Barrio:${barrio}\n  Punto de referencia: ${punto_referencia || "No especificado"}\n👤 Evaluado: ${nombre}\n📞 Teléfono: ${telefono}\n🏢 Empresa: ${cliente}\n💼 Cargo: ${cargo}\n📝 Tipo de visita: ${tipo_visita}\n\n📋 Para realizar esta visita, diligencie el siguiente formulario:\n🔗 ${linkFormulario}\n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.*`;
-                await enviarCorreo(evaluador_email, mensajeEvaluador);
-                await enviarWhatsApp(casoGuardado.evaluador_telefono, mensajeEvaluador);
-
+                const templateName = "asignacion_visita_evaluador";
+                const languageCode = "es";
+                const params = [
+                    solicitud,                           // {{1}} Solicitud
+                    ciudad || "No especificada",         // {{2}} Ciudad
+                    direccion || "No especificada",        // {{3}} Dirección
+                    barrio || "",                        // {{4}} Barrio
+                    punto_referencia || "No especificado",// {{5}} Punto de referencia
+                    nombre,                              // {{6}} Evaluado
+                    telefono,                            // {{7}} Teléfono
+                    cliente,                             // {{8}} Empresa
+                    cargo,                               // {{9}} Cargo
+                    tipo_visita,                         // {{10}} Tipo de visita
+                    linkFormulario                       // {{11}} Link del formulario
+                ];
+                await enviarCorreo(
+                    evaluador_email,
+                    'Actualización: Visita Asignada',
+                    `Se le ha asignado la solicitud ${solicitud}.`
+                );
+                await enviarWhatsAppTemplate(casoGuardado.evaluador_telefono, templateName, languageCode, params);
             }
-            //Notificacion analista
+
+            // Notificación al analista (seContacto === "Sí" y existe analista)
             if (seContacto === "Sí" && analista) {
-                const mensajeAnalista = `✅ La solicitud: ${solicitud}, asignada por ${analista}, correspondiente a la visita del señor ${nombre} para la empresa ${cliente} para el cargo de ${cargo}, en la ciudad de ${ciudad}, está programada para el día ${fecha_visita} a las ${hora_visita}.\n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.*`;
-            
+                const templateName = "asignacion_visita_analista";
+                const languageCode = "es";
+                const params = [
+                    solicitud,                           // {{1}} Solicitud
+                    analista,                            // {{2}} Analista
+                    nombre,                              // {{3}} Evaluado
+                    cliente,                             // {{4}} Empresa
+                    cargo,                               // {{5}} Cargo
+                    ciudad || "No especificada",         // {{6}} Ciudad
+                    fecha_visita || "Por definir",        // {{7}} Fecha
+                    hora_visita || "Por definir"           // {{8}} Hora
+                ];
                 const analistaSeleccionado = analistas.find(a => a.nombre === analista);
                 if (analistaSeleccionado) {
-                    await enviarCorreo(analistaSeleccionado.correo, 'Caso Asignado - Visita Programada', mensajeAnalista);
-                    await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
-            
-                    // Enviar WhatsApp a Henry Medina si es el analista asignado
+                    await enviarCorreo(
+                        analistaSeleccionado.correo,
+                        'Caso Asignado - Visita Programada',
+                        `La solicitud ${solicitud} ha sido asignada.`
+                    );
+                    await enviarWhatsAppTemplate(analistaSeleccionado.telefono, templateName, languageCode, params);
+                    // Enviar WhatsApp adicional a Henry Medina si es el analista asignado
                     if (analistaSeleccionado.nombre === "Henry Medina") {
-                        await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
+                        await enviarWhatsAppTemplate(analistaSeleccionado.telefono, templateName, languageCode, params);
                     }
                 }
-            }            
-            // No contacto evaluado 
-            if (seContacto === "No") {
-                const mensajeEvaluado = `⚠️ Señor ${nombre}, nos estamos comunicando con usted de parte de *VerifiK*, proveedor de *Atlas Seguridad*, con el fin de programar una visita domiciliaria, solicitada por *${cliente}* dentro del proceso de selección para el cargo de *${cargo}*.\n\n❗ *La no comunicación oportuna con usted es razón para no realizar la visita y devolver el proceso a Atlas Seguridad.*\n\n📲 Por favor, comuníquese con nosotros a: \n📞 WhatsApp: [3176520775](https://wa.me/573176520775)\n📞 Celular: 3023602245\n✉️ Email: verifikhm@gmail.com\n\n*Este es un mensaje automático, este número no recibe mensajes. Si necesita comunicación, utilice los datos proporcionados.*`;
-
-                await enviarCorreo(email, 'Intento de Contacto - VerifiK', mensajeEvaluado);
-                await enviarWhatsApp(telefono, mensajeEvaluado);
             }
 
-            if (seContacto === "No" && analista) {
-                const mensajeAnalista = `⚠️ *ATENCIÓN: NO HA SIDO POSIBLE ESTABLECER CONTACTO*\n\n🔹 *Solicitud:* ${solicitud}\n🔹 *Evaluado:* ${nombre}\n🔹 *Empresa:* ${cliente}\n🔹 *Cargo:* ${cargo}\n🔹 *Motivo:* ${motivo_no_programacion}\n🔹 *Intento N°:* ${intentos_contacto}\n🔹 *¿Se volverá a contactar?:* ${recontactar}\n\n*Este es un mensaje automático, este número no recibe mensajes.* \n📞 WhatsApp: [3176520775](https://wa.me/573176520775)\n✉️ Email: verifikhm@gmail.com`;
+            // Notificación al evaluado (seContacto === "No")
+            if (seContacto === "No") {
+                const templateName = "intento_contacto_evaluado";
+                const languageCode = "es";
+                const params = [
+                    nombre,       // {{1}} Evaluado
+                    cliente,      // {{2}} Empresa
+                    cargo         // {{3}} Cargo
+                ];
+                await enviarCorreo(
+                    email,
+                    'Intento de Contacto - VerifiK',
+                    `Se ha intentado contactar al evaluado ${nombre} sin éxito.`
+                );
+                await enviarWhatsAppTemplate(telefono, templateName, languageCode, params);
+            }
 
+            // Notificación al analista (seContacto === "No" y existe analista)
+            if (seContacto === "No" && analista) {
+                const templateName = "no_contacto_analista";
+                const languageCode = "es";
+                const params = [
+                    solicitud,             // {{1}} Solicitud
+                    nombre,                // {{2}} Evaluado
+                    cliente,               // {{3}} Empresa
+                    cargo,                 // {{4}} Cargo
+                    motivo_no_programacion,// {{5}} Motivo
+                    intentos_contacto,     // {{6}} Número de intento
+                    recontactar            // {{7}} ¿Se volverá a contactar?
+                ];
                 const analistaSeleccionado = analistas.find(a => a.nombre === analista);
                 if (analistaSeleccionado) {
-                    await enviarCorreo(analistaSeleccionado.correo, 'No Contacto - VerifiK', mensajeAnalista);
-                    await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
+                    await enviarCorreo(
+                        analistaSeleccionado.correo,
+                        'No Contacto - VerifiK',
+                        `No se ha logrado contactar al evaluado ${nombre} para la solicitud ${solicitud}.`
+                    );
+                    await enviarWhatsAppTemplate(analistaSeleccionado.telefono, templateName, languageCode, params);
                 }
             }
         } catch (err) {
@@ -183,7 +243,7 @@ router.put('/:id', async (req, res) => {
         "cancelada por evaluado",
         "cancelada por VerifiK",
         "cancelada por Atlas"
-      ];      
+    ];
     if (!estadosValidos.includes(estado)) {
         return res.status(400).json({ error: "Estado no válido." });
     }
@@ -202,18 +262,24 @@ router.put('/:id', async (req, res) => {
 
         res.json({ message: '✅ Caso actualizado con éxito', data });
 
+        // Mensaje textual (para correo o respaldo)
         const mensajeEstado = `🔔 ACTUALIZACION DE ESTADO\n\nLa solicitud ${caso.solicitud} ha sido actualizada al estado de ${estado}.\n\nEsto es un mensaje automático, este número no recibe mensajes. Si requiere comunicación, comuníquese con el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.`;
 
+        // Datos para la plantilla aprobada "actualizacion_estado_caso"
+        const templateName = "actualizacion_estado_caso";
+        const languageCode = "es";
+        const params = [caso.solicitud, estado];
+
         try {
-            // 📩 **Notificar al evaluador si está asignado**
+            // Notificar al analista, si se tiene correo y teléfono
             if (caso.analista_email) {
                 await enviarCorreo(caso.analista_email, 'Actualización de Estado de Caso', mensajeEstado);
-                await enviarWhatsApp(caso.analista_telefono, mensajeEstado);
+                await enviarWhatsAppTemplate(caso.analista_telefono, templateName, languageCode, params);
             }
-            // 📩 **Notificar al evaluador**
+            // Notificar al evaluador
             if (caso.evaluador_email) {
                 await enviarCorreo(caso.evaluador_email, 'Actualización de Estado de Caso', mensajeEstado);
-                await enviarWhatsApp(caso.evaluador_telefono, mensajeEstado);
+                await enviarWhatsAppTemplate(caso.evaluador_telefono, templateName, languageCode, params);
             }
         } catch (notificacionError) {
             console.error("❌ Error en las notificaciones:", notificacionError.message);
