@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
         direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
         contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
-        observaciones = "", seContacto, analista
+        observaciones = "", seContacto, analista,barrio = ""
     } = req.body;
 
     if (!solicitud || !nombre || !telefono || !estado) {
@@ -91,7 +91,7 @@ router.post('/', async (req, res) => {
             evaluador_asignado, contacto, cliente, cargo,
             regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
             telefonoterciario: telefonoTerciario, observaciones,
-            ultima_interaccion: new Date().toISOString(), evidencia_url: ""
+            ultima_interaccion: new Date().toISOString(), evidencia_url: "",barrio
         };
 
         const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select('*');
@@ -119,7 +119,7 @@ router.post('/', async (req, res) => {
             // Notificación al evaluador
 
             if (seContacto === "Sí") {
-                const mensajeEvaluador = `✅ Le fue asignada la solicitud: ${solicitud}\nDebe realizar dicha visita en:\n📍 Ciudad: ${ciudad || "No especificada"}\n🏠 Dirección: ${direccion || "No especificada"}\n📌 Barrio/Punto de referencia: ${punto_referencia || "No especificado"}\n👤 Evaluado: ${nombre}\n📞 Teléfono: ${telefono}\n🏢 Empresa: ${cliente}\n💼 Cargo: ${cargo}\n📝 Tipo de visita: ${tipo_visita}\n\n📋 Para realizar esta visita, diligencie el siguiente formulario:\n🔗 ${linkFormulario}\n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.*`;
+                const mensajeEvaluador = `✅ Le fue asignada la solicitud: ${solicitud}\nDebe realizar dicha visita en:\n📍 Ciudad: ${ciudad || "No especificada"}\n🏠 Dirección: ${direccion || "No especificada"}\n📌 Barrio:${barrio}\n  Punto de referencia: ${punto_referencia || "No especificado"}\n👤 Evaluado: ${nombre}\n📞 Teléfono: ${telefono}\n🏢 Empresa: ${cliente}\n💼 Cargo: ${cargo}\n📝 Tipo de visita: ${tipo_visita}\n\n📋 Para realizar esta visita, diligencie el siguiente formulario:\n🔗 ${linkFormulario}\n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.*`;
 
                 await enviarWhatsApp(evaluador_email, mensajeEvaluador);
             }
