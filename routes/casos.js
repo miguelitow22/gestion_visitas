@@ -44,10 +44,7 @@ const analistas = [
     { nombre: "Jairo López ", correo: "carlos@empresa.com", telefono: "+573001234567" },
     { nombre: "Henry Medina", correo: "maria@empresa.com", telefono: "+573002345678" },
 ];
-const evaluadores = [
-    { nombre: "Jairo Lopez", correo: "jairo@empresa.com", telefono: "+573146249096" },
-    { nombre: "Henry Medina", correo: "ana@empresa.com", telefono: "+573005679960" },
-  ];
+
 
 // ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
