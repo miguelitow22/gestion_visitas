@@ -104,46 +104,6 @@ router.post('/', async (req, res) => {
         }
 
         console.log("✅ Caso insertado en la BD:", casoGuardado);
-
-        let mensaje;
-        if (seContacto === "Sí") {
-            mensaje = `
-            ✅ Se ha creado un nuevo caso:
-            - Solicitud: ${solicitud}
-            - Nombre: ${nombre}
-            - Documento: ${documento}
-            - Tipo de Visita: ${tipo_visita}
-            - Fecha: ${fecha_visita || "Por definir"}
-            - Hora: ${hora_visita || "Por definir"}
-            - Ciudad: ${ciudad || "No especificada"}
-            - Dirección: ${direccion || "No especificada"}
-            - Evaluador: ${evaluador_asignado || "No asignado"}
-            - Formulario: ${linkFormulario}
-            `;
-        } else {
-            mensaje = `
-            ⚠️ No se logró contactar al evaluado:
-            - Nombre: ${nombre}
-            - Documento: ${documento}
-            - Intentos de contacto: ${intentos_contacto}
-            - Motivo: ${motivo_no_programacion}
-            `;
-
-            if (analista) {
-                const analistaSeleccionado = analistas.find(a => a.nombre === analista);
-                if (analistaSeleccionado) {
-                    const mensajeAnalista = `⚠️ No se logró contactar al evaluado:
-                    - Nombre: ${nombre}
-                    - Documento: ${documento}
-                    - Intentos de contacto: ${intentos_contacto}
-                    - Motivo: ${motivo_no_programacion}`;
-
-                    await enviarCorreo(analistaSeleccionado.correo, 'Caso No Contactado', mensajeAnalista);
-                    await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
-                }
-            }
-        }
-
         try {
             // Notificación al evaluado
             if (seContacto === "Sí") {
@@ -233,19 +193,16 @@ router.put('/:id', async (req, res) => {
         const mensajeEstado = `🔔 El estado de su caso ha sido actualizado a: ${estado}`;
 
         try {
-            // 📩 **Notificar al evaluado**
-            await enviarCorreo(caso.email, 'Actualización de Caso', mensajeEstado);
-            await enviarWhatsApp(caso.telefono, mensajeEstado);
-
             // 📩 **Notificar al evaluador si está asignado**
-            if (caso.evaluador_email) {
-                await enviarCorreo(caso.evaluador_email, 'Actualización de Caso', mensajeEstado);
+            if (caso.analista_email) {
+                await enviarCorreo(caso.analista_email, 'Actualización de Estado de Caso', mensajeEstado);
+                await enviarWhatsApp(caso.analista_telefono, mensajeEstado);
             }
-
-            // 📩 **Notificar a Atlas**
-            await enviarCorreo('miguelopsal@gmail.com', 'Actualización de Caso', `${mensajeEstado} - Caso ${caso.solicitud}`);
-            await enviarWhatsApp('+573146249096', `El estado del caso ${caso.solicitud} ha sido actualizado a: ${estado}`);
-
+            // 📩 **Notificar al evaluador**
+            if (caso.evaluador_email) {
+                await enviarCorreo(caso.evaluador_email, 'Actualización de Estado de Caso', mensajeEstado);
+                await enviarWhatsApp(caso.evaluador_telefono, mensajeEstado);
+            }
         } catch (notificacionError) {
             console.error("❌ Error en las notificaciones:", notificacionError.message);
         }
