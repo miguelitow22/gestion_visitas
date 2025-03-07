@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
         direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
         motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
         contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
-        observaciones = "", seContacto, analista,barrio = ""
+        observaciones = "", seContacto, analista,barrio = "",evaluador_telefono
     } = req.body;
 
     if (!solicitud || !nombre || !telefono || !estado) {
@@ -91,7 +91,7 @@ router.post('/', async (req, res) => {
             evaluador_asignado, contacto, cliente, cargo,
             regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
             telefonoterciario: telefonoTerciario, observaciones,
-            ultima_interaccion: new Date().toISOString(), evidencia_url: "",barrio
+            ultima_interaccion: new Date().toISOString(), evidencia_url: "",barrio,evaluador_telefono
         };
 
         const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select('*');
@@ -120,7 +120,9 @@ router.post('/', async (req, res) => {
 
             if (seContacto === "Sí") {
                 const mensajeEvaluador = `✅ Le fue asignada la solicitud: ${solicitud}\nDebe realizar dicha visita en:\n📍 Ciudad: ${ciudad || "No especificada"}\n🏠 Dirección: ${direccion || "No especificada"}\n📌 Barrio:${barrio}\n  Punto de referencia: ${punto_referencia || "No especificado"}\n👤 Evaluado: ${nombre}\n📞 Teléfono: ${telefono}\n🏢 Empresa: ${cliente}\n💼 Cargo: ${cargo}\n📝 Tipo de visita: ${tipo_visita}\n\n📋 Para realizar esta visita, diligencie el siguiente formulario:\n🔗 ${linkFormulario}\n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.*`;
-                await enviarWhatsApp(evaluador_email, mensajeEvaluador);
+                await enviarCorreo(evaluador_email, mensajeEvaluador);
+                await enviarWhatsApp(casoGuardado.evaluador_telefono, mensajeEvaluador);
+
             }
             //Notificacion analista
             if (seContacto === "Sí" && analista) {
