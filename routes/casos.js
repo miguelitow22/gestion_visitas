@@ -126,17 +126,19 @@ router.post('/', async (req, res) => {
             //Notificacion analista
             if (seContacto === "Sí" && analista) {
                 const mensajeAnalista = `✅ La solicitud: ${solicitud}, asignada por ${analista}, correspondiente a la visita del señor ${nombre} para la empresa ${cliente} para el cargo de ${cargo}, en la ciudad de ${ciudad}, está programada para el día ${fecha_visita} a las ${hora_visita}.\n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.*`;
-
+            
                 const analistaSeleccionado = analistas.find(a => a.nombre === analista);
                 if (analistaSeleccionado) {
                     await enviarCorreo(analistaSeleccionado.correo, 'Caso Asignado - Visita Programada', mensajeAnalista);
                     await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
+            
+                    // Enviar WhatsApp a Henry Medina si es el analista asignado
+                    if (analistaSeleccionado.nombre === "Henry Medina") {
+                        await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
+                    }
                 }
             }
-            // Enviar WhatsApp a Henry Medina
-            if (analistaSeleccionado.nombre === "Henry Medina") {
-                await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
-            }
+            
             // No contacto evaluado 
             if (seContacto === "No") {
                 const mensajeEvaluado = `⚠️ Señor ${nombre}, nos estamos comunicando con usted de parte de *VerifiK*, proveedor de *Atlas Seguridad*, con el fin de programar una visita domiciliaria, solicitada por *${cliente}* dentro del proceso de selección para el cargo de *${cargo}*.\n\n❗ *La no comunicación oportuna con usted es razón para no realizar la visita y devolver el proceso a Atlas Seguridad.*\n\n📲 Por favor, comuníquese con nosotros a: \n📞 WhatsApp: [3176520775](https://wa.me/573176520775)\n📞 Celular: 3023602245\n✉️ Email: verifikhm@gmail.com\n\n*Este es un mensaje automático, este número no recibe mensajes. Si necesita comunicación, utilice los datos proporcionados.*`;
