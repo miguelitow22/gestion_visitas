@@ -92,7 +92,7 @@ router.post('/', async (req, res) => {
             evaluador_asignado, contacto, cliente, cargo,
             regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
             telefonoterciario: telefonoTerciario, observaciones,
-            ultima_interaccion: new Date().toISOString(), evidencia_url: "",barrio,
+            ultima_interaccion: new Date().toISOString(), evidencia_url: "",barrio,evaluador_telefono
         };
 
         const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select('*');
