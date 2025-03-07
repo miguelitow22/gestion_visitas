@@ -106,7 +106,7 @@ router.post('/', async (req, res) => {
             // Notificación al evaluado (seContacto === "Sí")
             if (seContacto === "Sí") {
                 const templateName = "visita_domiciliaria_programada";
-                const languageCode = "es";
+                const languageCode = "es_CO";
                 const params = [
                     fecha_visita || "Por definir",    // {{1}} Fecha
                     hora_visita || "Por definir",       // {{2}} Hora
@@ -126,7 +126,7 @@ router.post('/', async (req, res) => {
             // Notificación al evaluador (seContacto === "Sí")
             if (seContacto === "Sí") {
                 const templateName = "asignacion_visita_evaluador";
-                const languageCode = "es";
+                const languageCode = "es_CO";
                 const params = [
                     solicitud,                           // {{1}} Solicitud
                     ciudad || "No especificada",         // {{2}} Ciudad
@@ -151,7 +151,7 @@ router.post('/', async (req, res) => {
             // Notificación al analista (seContacto === "Sí" y existe analista)
             if (seContacto === "Sí" && analista) {
                 const templateName = "asignacion_visita_analista";
-                const languageCode = "es";
+                const languageCode = "es_CO";
                 const params = [
                     solicitud,                           // {{1}} Solicitud
                     analista,                            // {{2}} Analista
@@ -180,7 +180,7 @@ router.post('/', async (req, res) => {
             // Notificación al evaluado (seContacto === "No")
             if (seContacto === "No") {
                 const templateName = "intento_contacto_evaluado";
-                const languageCode = "es";
+                const languageCode = "es_CO";
                 const params = [
                     nombre,       // {{1}} Evaluado
                     cliente,      // {{2}} Empresa
@@ -197,7 +197,7 @@ router.post('/', async (req, res) => {
             // Notificación al analista (seContacto === "No" y existe analista)
             if (seContacto === "No" && analista) {
                 const templateName = "no_contacto_analista";
-                const languageCode = "es";
+                const languageCode = "es_CO";
                 const params = [
                     solicitud,             // {{1}} Solicitud
                     nombre,                // {{2}} Evaluado
@@ -267,7 +267,7 @@ router.put('/:id', async (req, res) => {
 
         // Datos para la plantilla aprobada "actualizacion_estado_caso"
         const templateName = "actualizacion_estado_caso";
-        const languageCode = "es";
+        const languageCode = "es_CO";
         const params = [caso.solicitud, estado];
 
         try {
