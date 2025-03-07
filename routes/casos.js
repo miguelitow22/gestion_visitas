@@ -17,22 +17,19 @@ const upload = multer({
 });
 
 // ✅ **Constantes con los correos y teléfonos de las regionales**
-const regionales = {
-    "Norte": { email: "regional.norte@empresa.com", telefono: "+573001112233" },
-    "Sur": { email: "regional.sur@empresa.com", telefono: "+573002223344" },
-    "Centro": { email: "regional.centro@empresa.com", telefono: "+573003334455" }
-};
+const regionales = ["Antioquia", "Caribe", "Centro","Eje Cafetero","Nororiente","Occidente","Oriente"];
 
 // ✅ **Formularios por tipo de visita**
 const formularios = {
-    "Ingreso": "https://formulario.com/ingreso",
-    "Seguimiento": "https://formulario.com/seguimiento",
-    "Ingreso Bicicletas HA": "https://formulario.com/bicicletas-ingreso",
-    "Seguimiento Bicicletas HA": "https://formulario.com/bicicletas-seguimiento",
-    "Atlas": "https://formulario.com/atlas",
-    "Pic Colombia": "https://formulario.com/pic-colombia",
-    "Virtual": "https://formulario.com/virtual"
-};
+    "Ingreso": "https://forms.gle/GdWmReVymyzQLKGn6  ",
+    "Seguimiento": "https://forms.gle/RMiHfRX1VUMCpYdQ7  ",
+    "Ingreso Bicicletas HA": "https://forms.gle/U54QxgtKBZX9u244A",
+    "Seguimiento Bicicletas HA": "https://forms.gle/GTK6Jm6c5v5HkmKp9",
+    "Atlas": "https://forms.gle/TNrQY9fhRpZWQFy56",
+    "Pic Colombia": "https://forms.gle/rrkhzfu7muDGjgZt6",
+    "Virtual": "https://forms.gle/8Z6n6g5sZ8Qv9L6m9prueba"
+  };
+
 
 // ✅ **Validaciones de datos**
 const validarEmail = email => email ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) : true;
@@ -40,9 +37,13 @@ const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
 // ✅ **Lista de analistas**
 const analistas = [
-    { nombre: "Carlos", correo: "carlos@empresa.com", telefono: "+573001234567" },
-    { nombre: "María", correo: "maria@empresa.com", telefono: "+573002345678" },
-];
+    { nombre: "Ana Isabel Aguirre", correo: "carlos@empresa.com", telefono: "+573001234567" },
+    { nombre: "Luisa Fernanda Tamayo", correo: "maria@empresa.com", telefono: "+573002345678" },
+    { nombre: "Julieth Quilindo", correo: "carlos@empresa.com", telefono: "+573001234567" },
+    { nombre: "Maritza Majin Rodríguez", correo: "maria@empresa.com", telefono: "+573002345678" },
+    { nombre: "Jairo López ", correo: "carlos@empresa.com", telefono: "+573001234567" },
+    { nombre: "Henry Medina", correo: "maria@empresa.com", telefono: "+573002345678" },
+  ];
 
 // ✅ **Crear un nuevo caso**
 router.post('/', async (req, res) => {
