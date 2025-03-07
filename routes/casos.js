@@ -120,7 +120,6 @@ router.post('/', async (req, res) => {
 
             if (seContacto === "Sí") {
                 const mensajeEvaluador = `✅ Le fue asignada la solicitud: ${solicitud}\nDebe realizar dicha visita en:\n📍 Ciudad: ${ciudad || "No especificada"}\n🏠 Dirección: ${direccion || "No especificada"}\n📌 Barrio:${barrio}\n  Punto de referencia: ${punto_referencia || "No especificado"}\n👤 Evaluado: ${nombre}\n📞 Teléfono: ${telefono}\n🏢 Empresa: ${cliente}\n💼 Cargo: ${cargo}\n📝 Tipo de visita: ${tipo_visita}\n\n📋 Para realizar esta visita, diligencie el siguiente formulario:\n🔗 ${linkFormulario}\n\nℹ️ *Este es un mensaje automático, este número no recibe respuestas.*  \n*Si necesita comunicarse, use el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.*`;
-
                 await enviarWhatsApp(evaluador_email, mensajeEvaluador);
             }
             //Notificacion analista
@@ -137,8 +136,7 @@ router.post('/', async (req, res) => {
                         await enviarWhatsApp(analistaSeleccionado.telefono, mensajeAnalista);
                     }
                 }
-            }
-            
+            }            
             // No contacto evaluado 
             if (seContacto === "No") {
                 const mensajeEvaluado = `⚠️ Señor ${nombre}, nos estamos comunicando con usted de parte de *VerifiK*, proveedor de *Atlas Seguridad*, con el fin de programar una visita domiciliaria, solicitada por *${cliente}* dentro del proceso de selección para el cargo de *${cargo}*.\n\n❗ *La no comunicación oportuna con usted es razón para no realizar la visita y devolver el proceso a Atlas Seguridad.*\n\n📲 Por favor, comuníquese con nosotros a: \n📞 WhatsApp: [3176520775](https://wa.me/573176520775)\n📞 Celular: 3023602245\n✉️ Email: verifikhm@gmail.com\n\n*Este es un mensaje automático, este número no recibe mensajes. Si necesita comunicación, utilice los datos proporcionados.*`;
@@ -192,7 +190,7 @@ router.put('/:id', async (req, res) => {
 
         res.json({ message: '✅ Caso actualizado con éxito', data });
 
-        const mensajeEstado = `🔔 El estado de su caso ha sido actualizado a: ${estado}`;
+        const mensajeEstado = `🔔 ACTUALIZACION DE ESTADO\n\nLa solicitud ${caso.solicitud} ha sido actualizada al estado de ${estado}.\n\nEsto es un mensaje automático, este número no recibe mensajes. Si requiere comunicación, comuníquese con el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.`;
 
         try {
             // 📩 **Notificar al evaluador si está asignado**
