@@ -36,12 +36,12 @@ const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
 // ✅ **Lista de analistas**
 const analistas = [
-    { nombre: "Ana Isabel Aguirre", correo: "aaguirrer@atlas.com.co", telefono: "+573206779735"},
-    { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320"},
-    { nombre: "Julieth Quilindo", correo: "jquilindo@atlas.com.co", telefono: "+573174011972"},
-    { nombre: "Maritza Majin Rodríguez", correo: "secinvescali3@atlas.com.co", telefono: "+573172178473"},
-    { nombre: "Jairo López ", correo: "jairolo962@gmail.com", telefono: "+573152354796 "},
-    { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960 "},
+    { nombre: "Ana Isabel Aguirre", correo: "aaguirrer@atlas.com.co", telefono: "+573206779735" },
+    { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320" },
+    { nombre: "Julieth Quilindo", correo: "jquilindo@atlas.com.co", telefono: "+573174011972" },
+    { nombre: "Maritza Majin Rodríguez", correo: "secinvescali3@atlas.com.co", telefono: "+573172178473" },
+    { nombre: "Jairo López ", correo: "jairolo962@gmail.com", telefono: "+573152354796 " },
+    { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960 " },
 ];
 
 // ✅ **Crear un nuevo caso**
@@ -149,33 +149,30 @@ router.post('/', async (req, res) => {
             }
 
             // Notificación al analista (seContacto === "Sí" y existe analista)
-            if (seContacto === "Sí" && analista) {
+            // Notificación a todos los analistas (seContacto === "Sí")
+            if (seContacto === "Sí") {
                 const templateName = "asignacion_visita_analista";
                 const languageCode = "es_CO";
-                const params = [
-                    solicitud,                           // {{1}} Solicitud
-                    analista,                            // {{2}} Analista
-                    nombre,                              // {{3}} Evaluado
-                    cliente,                             // {{4}} Empresa
-                    cargo,                               // {{5}} Cargo
-                    ciudad || "No especificada",         // {{6}} Ciudad
-                    fecha_visita || "Por definir",        // {{7}} Fecha
-                    hora_visita || "Por definir"           // {{8}} Hora
-                ];
-                const analistaSeleccionado = analistas.find(a => a.nombre === analista);
-                if (analistaSeleccionado) {
+                for (const analistaObj of analistas) {
+                    const params = [
+                        solicitud,                           // {{1}} Solicitud
+                        analistaObj.nombre,                  // {{2}} Nombre del analista
+                        nombre,                              // {{3}} Evaluado
+                        cliente,                             // {{4}} Empresa
+                        cargo,                               // {{5}} Cargo
+                        ciudad || "No especificada",         // {{6}} Ciudad
+                        fecha_visita || "Por definir",        // {{7}} Fecha
+                        hora_visita || "Por definir"           // {{8}} Hora
+                    ];
                     await enviarCorreo(
-                        analistaSeleccionado.correo,
+                        analistaObj.correo,
                         'Caso Asignado - Visita Programada',
                         `La solicitud ${solicitud} ha sido asignada.`
                     );
-                    await enviarWhatsAppTemplate(analistaSeleccionado.telefono, templateName, languageCode, params);
-                    // Enviar WhatsApp adicional a Henry Medina si es el analista asignado
-                    if (analistaSeleccionado.nombre === "Henry Medina") {
-                        await enviarWhatsAppTemplate(analistaSeleccionado.telefono, templateName, languageCode, params);
-                    }
+                    await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
                 }
             }
+
 
             // Notificación al evaluado (seContacto === "No")
             if (seContacto === "No") {
@@ -195,28 +192,29 @@ router.post('/', async (req, res) => {
             }
 
             // Notificación al analista (seContacto === "No" y existe analista)
-            if (seContacto === "No" && analista) {
+            // Notificación a todos los analistas en caso de "No Contacto"
+            if (seContacto === "No") {
                 const templateName = "no_contacto_analista";
                 const languageCode = "es_CO";
                 const params = [
-                    solicitud,             // {{1}} Solicitud
-                    nombre,                // {{2}} Evaluado
-                    cliente,               // {{3}} Empresa
-                    cargo,                 // {{4}} Cargo
-                    motivo_no_programacion,// {{5}} Motivo
-                    intentos_contacto,     // {{6}} Número de intento
-                    recontactar            // {{7}} ¿Se volverá a contactar?
+                    solicitud,
+                    nombre,
+                    cliente,
+                    cargo,
+                    motivo_no_programacion,
+                    intentos_contacto,
+                    recontactar
                 ];
-                const analistaSeleccionado = analistas.find(a => a.nombre === analista);
-                if (analistaSeleccionado) {
+                for (const analistaObj of analistas) {
                     await enviarCorreo(
-                        analistaSeleccionado.correo,
+                        analistaObj.correo,
                         'No Contacto - VerifiK',
                         `No se ha logrado contactar al evaluado ${nombre} para la solicitud ${solicitud}.`
                     );
-                    await enviarWhatsAppTemplate(analistaSeleccionado.telefono, templateName, languageCode, params);
+                    await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
                 }
             }
+
         } catch (err) {
             console.error("❌ Error en las notificaciones:", err.message);
         }
@@ -272,10 +270,17 @@ router.put('/:id', async (req, res) => {
 
         try {
             // Notificar al analista, si se tiene correo y teléfono
-            if (caso.analista_email) {
-                await enviarCorreo(caso.analista_email, 'Actualización de Estado de Caso', mensajeEstado);
-                await enviarWhatsAppTemplate(caso.analista_telefono, templateName, languageCode, params);
+            // Notificar a todos los analistas sobre la actualización del caso
+
+            for (const analistaObj of analistas) {
+                await enviarCorreo(
+                    analistaObj.correo,
+                    'Actualización de Estado de Caso',
+                    mensajeEstado
+                );
+                await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
             }
+
             // Notificar al evaluador
             if (caso.evaluador_email) {
                 await enviarCorreo(caso.evaluador_email, 'Actualización de Estado de Caso', mensajeEstado);
