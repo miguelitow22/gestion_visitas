@@ -125,7 +125,7 @@ router.post('/', async (req, res) => {
 
             // Notificación al evaluador (seContacto === "Sí")
             if (seContacto === "Sí") {
-                const templateName = "asignacion_visita_evaluador";
+                const templateName = "asignacion_visita_de_evaluador";
                 const languageCode = "es_CO";
                 const params = [
                     solicitud,                           // {{1}} Solicitud
