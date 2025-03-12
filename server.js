@@ -5,6 +5,7 @@ const casosRoutes = require('./routes/casos');
 const comunicacionesRoutes = require('./routes/comunicaciones');
 const evaluacionesRoutes = require('./routes/evaluaciones');
 const enviosRoutes = require('./routes/envios');
+const facturacionRoutes = require('./routes/facturacion');  // <-- Importa la ruta de facturación
 
 dotenv.config();
 const app = express();
@@ -24,7 +25,6 @@ app.use(cors({
     credentials: true // Permitir cookies y autenticación si las usas
 }));
 
-
 // ✅ Middleware para parsear JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Soporte para formularios
@@ -43,6 +43,7 @@ app.use('/api/casos', casosRoutes);
 app.use('/api/comunicaciones', comunicacionesRoutes);
 app.use('/api/evaluaciones', evaluacionesRoutes);
 app.use('/api/envios', enviosRoutes);
+app.use('/api/facturacion', facturacionRoutes); // <-- Monta la ruta de facturación
 
 app.get('/', (req, res) => {
     res.send('API funcionando correctamente');
