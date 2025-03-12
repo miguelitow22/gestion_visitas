@@ -27,6 +27,46 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: "Error al obtener los registros." });
     }
 
+    // Definir una fila de encabezados que se mostrará siempre
+    const headerRow = new Paragraph({
+      children: [
+        new TextRun({ text: "Solicitud", bold: true }),
+        new TextRun({ text: " | " }),
+        new TextRun({ text: "Nombre", bold: true }),
+        new TextRun({ text: " | " }),
+        new TextRun({ text: "Estado", bold: true }),
+        new TextRun({ text: " | " }),
+        new TextRun({ text: "Fecha Visita", bold: true }),
+        new TextRun({ text: " | " }),
+        new TextRun({ text: "Hora Visita", bold: true }),
+        new TextRun({ text: " | " }),
+        new TextRun({ text: "Tipo de Visita", bold: true }),
+        new TextRun({ text: " | " }),
+        new TextRun({ text: "Cliente", bold: true }),
+      ]
+    });
+
+    // Si no hay registros, muestra un mensaje; de lo contrario, genera una línea por cada registro
+    const registrosParagraphs = data && data.length > 0
+      ? data.map(item => new Paragraph({
+          children: [
+            new TextRun(`${item.solicitud || ''}`),
+            new TextRun({ text: " | " }),
+            new TextRun({ text: `${item.nombre || ''}` }),
+            new TextRun({ text: " | " }),
+            new TextRun({ text: `${item.estado || ''}` }),
+            new TextRun({ text: " | " }),
+            new TextRun({ text: `${item.fecha_visita ? item.fecha_visita.toString() : ''}` }),
+            new TextRun({ text: " | " }),
+            new TextRun({ text: `${item.hora_visita ? item.hora_visita.toString() : ''}` }),
+            new TextRun({ text: " | " }),
+            new TextRun({ text: `${item.tipo_visita || ''}` }),
+            new TextRun({ text: " | " }),
+            new TextRun({ text: `${item.cliente || ''}` }),
+          ]
+        }))
+      : [new Paragraph({ text: "No se encontraron registros para el rango especificado." })];
+
     // Crear el documento Word usando la sintaxis de secciones
     const doc = new Document({
       creator: "VerifiK",
@@ -38,20 +78,8 @@ router.get('/', async (req, res) => {
               text: "Reporte de Facturación",
               heading: "Heading1",
             }),
-            // Se recorre cada registro para crear un párrafo con los campos deseados
-            ...data.map(item => new Paragraph({
-              children: [
-                new TextRun(`Solicitud: ${item.solicitud || ''}`),
-                new TextRun({ text: `Nombre: ${item.nombre || ''}`, break: 1 }),
-                new TextRun({ text: `Estado: ${item.estado || ''}`, break: 1 }),
-                new TextRun({ text: `Fecha Visita: ${item.fecha_visita ? item.fecha_visita.toString() : ''}`, break: 1 }),
-                new TextRun({ text: `Hora Visita: ${item.hora_visita ? item.hora_visita.toString() : ''}`, break: 1 }),
-                new TextRun({ text: `Tipo de Visita: ${item.tipo_visita || ''}`, break: 1 }),
-                new TextRun({ text: `Cliente: ${item.cliente || ''}`, break: 1 }),
-                // Puedes agregar más campos si lo requieres, por ejemplo:
-                // new TextRun({ text: `Dirección: ${item.direccion || ''}`, break: 1 }),
-              ]
-            }))
+            headerRow,
+            ...registrosParagraphs
           ]
         }
       ]
