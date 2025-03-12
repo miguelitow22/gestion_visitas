@@ -14,6 +14,7 @@ router.get('/', async (req, res) => {
   }
 
   try {
+    // Consulta a la tabla "casos" filtrando por el campo fecha_visita
     const { data, error } = await supabase
       .from('casos')
       .select('*')
@@ -26,7 +27,7 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: "Error al obtener los registros." });
     }
 
-    // Crear el documento utilizando la sintaxis de secciones
+    // Crear el documento Word usando la sintaxis de secciones
     const doc = new Document({
       creator: "VerifiK",
       title: "Reporte de Facturación",
@@ -37,20 +38,23 @@ router.get('/', async (req, res) => {
               text: "Reporte de Facturación",
               heading: "Heading1",
             }),
-            ...data.map(item =>
-              new Paragraph({
-                children: [
-                  new TextRun(`Solicitud: ${item.solicitud}`),
-                  new TextRun({ text: `Nombre: ${item.nombre}`, break: 1 }),
-                  new TextRun({ text: `Fecha Visita: ${item.fecha_visita}`, break: 1 }),
-                  new TextRun({ text: `Tipo de Visita: ${item.tipo_visita}`, break: 1 }),
-                  // Agrega otros campos según lo requieras
-                ],
-              })
-            ),
-          ],
-        },
-      ],
+            // Se recorre cada registro para crear un párrafo con los campos deseados
+            ...data.map(item => new Paragraph({
+              children: [
+                new TextRun(`Solicitud: ${item.solicitud || ''}`),
+                new TextRun({ text: `Nombre: ${item.nombre || ''}`, break: 1 }),
+                new TextRun({ text: `Estado: ${item.estado || ''}`, break: 1 }),
+                new TextRun({ text: `Fecha Visita: ${item.fecha_visita ? item.fecha_visita.toString() : ''}`, break: 1 }),
+                new TextRun({ text: `Hora Visita: ${item.hora_visita ? item.hora_visita.toString() : ''}`, break: 1 }),
+                new TextRun({ text: `Tipo de Visita: ${item.tipo_visita || ''}`, break: 1 }),
+                new TextRun({ text: `Cliente: ${item.cliente || ''}`, break: 1 }),
+                // Puedes agregar más campos si lo requieres, por ejemplo:
+                // new TextRun({ text: `Dirección: ${item.direccion || ''}`, break: 1 }),
+              ]
+            }))
+          ]
+        }
+      ]
     });
 
     const buffer = await Packer.toBuffer(doc);
