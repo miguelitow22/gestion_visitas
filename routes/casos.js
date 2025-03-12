@@ -129,16 +129,18 @@ router.post('/', async (req, res) => {
                 const languageCode = "es_CO";
                 const params = [
                     solicitud,                           // {{1}} Solicitud
-                    ciudad || "No especificada",         // {{2}} Ciudad
-                    direccion || "No especificada",        // {{3}} Dirección
-                    barrio || "",                        // {{4}} Barrio
-                    punto_referencia || "No especificado",// {{5}} Punto de referencia
-                    nombre,                              // {{6}} Evaluado
-                    telefono,                            // {{7}} Teléfono
-                    cliente,                             // {{8}} Empresa
-                    cargo,                               // {{9}} Cargo
-                    tipo_visita,                         // {{10}} Tipo de visita
-                    linkFormulario                       // {{11}} Link del formulario
+                    fecha_visita || "Por definir",    // {{2}} Fecha
+                    hora_visita || "Por definir",       // {{3}} Hora
+                    ciudad || "No especificada",         // {{4}} Ciudad
+                    direccion || "No especificada",        // {{5}} Dirección
+                    barrio || "",                        // {{6}} Barrio
+                    punto_referencia || "No especificado",// {{7}} Punto de referencia
+                    nombre,                              // {{8}} Evaluado
+                    telefono,                            // {{9}} Teléfono
+                    cliente,                             // {{10}} Empresa
+                    cargo,                               // {{11}} Cargo
+                    tipo_visita,                         // {{12}} Tipo de visita
+                    linkFormulario                       // {{13}} Link del formulario
                 ];
                 await enviarCorreo(
                     evaluador_email,
