@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
-const { enviarCorreo } = require('../services/emailService'); // Solo una importación
+const { enviarCorreo } = require('../services/emailService');
 const { v4: uuidv4 } = require('uuid');
 const { enviarWhatsApp, enviarWhatsAppTemplate } = require('../services/whatsappService');
 require('dotenv').config();
