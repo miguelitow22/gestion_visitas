@@ -51,12 +51,38 @@ router.post('/', async (req, res) => {
     console.log("📌 Recibiendo datos en backend:", req.body);
 
     const {
-        solicitud, nombre, documento, telefono, email = null, estado, tipo_visita, ciudad = "",
-        direccion, punto_referencia, fecha_visita, hora_visita, intentos_contacto = 0,
-        motivo_no_programacion = "", evaluador_email, evaluador_asignado = "",
-        contacto, cliente, cargo, regional = "", telefonoSecundario = "", telefonoTerciario = "",
-        observaciones = "", seContacto, analista, barrio = "", evaluador_telefono, recontactar
-    } = req.body;
+        solicitud,
+        nombre,
+        documento,
+        telefono,
+        email = null,
+        estado,
+        tipo_visita,
+        ciudad = "",
+        direccion,
+        punto_referencia,
+        fecha_visita,
+        hora_visita,
+        intentos_contacto = 0,
+        motivo_no_programacion = "",
+        evaluador_email,
+        evaluador_asignado = "",
+        contacto,
+        cliente,
+        cargo,
+        regional = "",
+        telefonoSecundario = "",
+        telefonoTerciario = "",
+        observaciones = "",
+        seContacto,
+        analista,
+        barrio = "",
+        evaluador_telefono,
+        recontactar,
+        programador = "",         // NUEVO: nombre del programador
+        gastos_adicionales = 0      // NUEVO: valor ingresado para gastos adicionales
+      } = req.body;
+      
 
     if (!solicitud || !nombre || !telefono || !estado) {
         return res.status(400).json({ error: 'Datos obligatorios faltantes.' });
@@ -74,6 +100,57 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'Número de teléfono no válido' });
     }
 
+    const municipiosViaticos = {
+        "Medellín": 0,
+        "Medellín (Belén AltaVista parte alta)": 15000,
+        "Medellín (San Antonio de Prado)": 16000,
+        "Medellín (San Cristóbal)": 10000,
+        "Medellín (Santa Elena)": 49000,
+        "Barbosa": 39000,
+        "Bello": 0,
+        "Bello (Vereda Hato Viejo)": 34000,
+        "Caldas": 20000,
+        "Copacabana": 16000,
+        "Envigado": 0,
+        "Girardota": 16000,
+        "Itagüí": 0,
+        "La Estrella": 16000,
+        "Sabaneta": 0,
+        "Amaga": 44000,
+        "Angelópolis": 44000,
+        "Arboletes": 294000,
+        "Carepa": 224000,
+        "Caucasia": 164000,
+        "Chigorodó": 214000,
+        "Cisneros": 84000,
+        "Don Matías": 84000,
+        "El Carmen de Viboral": 54000,
+        "El peñol": 74000,
+        "Entrerríos": 84000,
+        "Guarne": 34000,
+        "Jardín": 150000,
+        "La ceja": 38000,
+        "Marinilla": 68000,
+        "Puerto Berrio": 124000,
+        "Rionegro": 44000,
+        "Salgar": 114000,
+        "San Andrés de Cuerquia": 124000,
+        "San Jerónimo": 46000,
+        "San Pedro de los Milagros": 38000,
+        "San Vicente Ferrer": 44000,
+        "Santa Fe de Antioquia": 50000,
+        "Santa Rosa de Osos": 102000,
+        "Santo Domingo": 104000,
+        "Santuario": 108000,
+        "Segovia": 173000,
+        "Taraza": 194000,
+        "Turbo": 244000,
+        "Yarumal": 120000,
+      };
+      
+      const viaticosValor = municipiosViaticos[ciudad] || 0;
+      
+
     try {
         // 📌 **Generar un ID único para el caso**
         const id = uuidv4();
@@ -88,7 +165,9 @@ router.post('/', async (req, res) => {
             evaluador_asignado, contacto, cliente, cargo,
             regional: regional || "No aplica", telefonosecundario: telefonoSecundario,
             telefonoterciario: telefonoTerciario, observaciones,
-            ultima_interaccion: new Date().toISOString(), evidencia_url: "", barrio, evaluador_telefono
+            ultima_interaccion: new Date().toISOString(), evidencia_url: "", barrio, evaluador_telefono, viaticos: viaticosValor,
+            gastos_adicionales: gastos_adicionales,
+            programador: programador
         };
 
         const { data, error } = await supabase.from('casos').insert([nuevoCaso]).select('*');
@@ -98,6 +177,30 @@ router.post('/', async (req, res) => {
         if (!casoGuardado) {
             return res.status(500).json({ error: "No se pudo recuperar la solicitud después de la inserción." });
         }
+
+        if (ciudad && viaticosValor > 0) {
+            const subjectViaticos = `Solicitud de aprobación de viáticos para solicitud N ${solicitud}`;
+            const messageViaticos = `
+          Buenos días,
+          La solicitud N ${solicitud}, correspondiente a la visita del señor ${nombre} para ${cliente} para el ${cargo}, en la ${ciudad} está programada para el ${fecha_visita || "Por definir"} a las ${hora_visita || "Por definir"}.
+          Con el fin de cubrir los gastos en los que se incurrirán para realizar dicha visita, les solicitamos la aprobación de los gastos por desplazamiento por valor de $${viaticosValor.toLocaleString()}, adicional a estos el valor de $${parseFloat(gastos_adicionales).toLocaleString()} por concepto de desplazamiento veredal o rural necesarios para llegar hasta la vivienda del evaluado.
+          Att,
+          ${programador}
+            `;
+          
+            for (const analistaObj of analistas) {
+              try {
+                await enviarCorreo(
+                  analistaObj.correo,
+                  subjectViaticos,
+                  messageViaticos
+                );
+              } catch (err) {
+                console.error("Error al enviar correo de viáticos a", analistaObj.correo, err);
+              }
+            }
+          }
+          
 
         console.log("✅ Caso insertado en la BD:", casoGuardado);
         try {
