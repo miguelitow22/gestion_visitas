@@ -242,7 +242,8 @@ router.put('/:id', async (req, res) => {
         "terminada",
         "cancelada por evaluado",
         "cancelada por VerifiK",
-        "cancelada por Atlas"
+        "cancelada por Atlas",
+        "subida al Drive"
     ];
     if (!estadosValidos.includes(estado)) {
         return res.status(400).json({ error: "Estado no válido." });
@@ -288,6 +289,50 @@ router.put('/:id', async (req, res) => {
                 await enviarCorreo(caso.evaluador_email, 'Actualización de Estado de Caso', mensajeEstado);
                 await enviarWhatsAppTemplate(caso.evaluador_telefono, templateName, languageCode, params);
             }
+
+            // Notificar claramente al programador al cambiar estado a "subida al Drive"
+            if (estado === "subida al Drive") {
+                const templateName = "actualizacion_subida_drive";
+                const languageCode = "es_CO";
+
+                // ✅ Datos claramente definidos del programador directamente en backend
+                const programadorTelefono = "+573176520775";
+                const programadorEmail = "verifikhm@gmail.com";
+
+                const mensajeCorreo = `
+                🔔 ACTUALIZACIÓN DE ESTADO
+  
+                  La solicitud ${caso.solicitud} ha sido subida al Drive para ser revisada y complementada.
+  
+                Una vez complementada, súbala al sistema Savila de Atlas Seguridad y asegúrese de cambiar el estado a TERMINADA.
+  
+                Este es un mensaje automático, no responda directamente.
+                Si necesita ayuda, comuníquese al WhatsApp: ${programadorTelefono} o al Email: ${programadorEmail}.
+                `;
+
+                try {
+                    // 📧 Enviar correo claramente definido al programador
+                    await enviarCorreo(
+                        programadorEmail,
+                        `Caso ${caso.solicitud} subida al Drive`,
+                        mensajeCorreo
+                    );
+
+                    // 📱 Enviar WhatsApp claramente definido al programador con plantilla
+                    await enviarWhatsAppTemplate(
+                        programadorTelefono,
+                        templateName,
+                        languageCode,
+                        [caso.solicitud]
+                    );
+
+                    console.log("✅ Notificaciones (WhatsApp y correo) enviadas correctamente al programador.");
+
+                } catch (errorNotificacion) {
+                    console.error('❌ Error enviando notificaciones:', errorNotificacion);
+                }
+            }
+
         } catch (notificacionError) {
             console.error("❌ Error en las notificaciones:", notificacionError.message);
         }
