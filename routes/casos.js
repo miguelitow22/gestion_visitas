@@ -8,14 +8,12 @@ require('dotenv').config();
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-
 // 📌 **Configuración de almacenamiento para evidencias**
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // Máximo 5MB
 });
-
 // ✅ **Constantes con los correos y teléfonos de las regionales**
 const regionales = ["Antioquia", "Caribe", "Centro", "Eje Cafetero", "Nororiente", "Occidente", "Oriente"];
 
