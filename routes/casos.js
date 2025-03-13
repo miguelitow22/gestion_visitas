@@ -34,12 +34,12 @@ const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
 // ✅ **Lista de analistas**
 const analistas = [
-    { nombre: "Ana Isabel Aguirre", correo: "aaguirrer@atlas.com.co", telefono: "+573206779735" },
-    { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320" },
-    { nombre: "Julieth Quilindo", correo: "jquilindo@atlas.com.co", telefono: "+573174011972" },
-    { nombre: "Maritza Majin Rodríguez", correo: "secinvescali3@atlas.com.co", telefono: "+573172178473" },
-    { nombre: "Jairo López ", correo: "jairolo962@gmail.com", telefono: "+573152354796 " },
-    { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960 " },
+    { nombre: "Ana Isabel Aguirre", correo: "aaguirrer@atlas.com.co", telefono: "+573206779735"},
+    { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320"},
+    { nombre: "Julieth Quilindo", correo: "jquilindo@atlas.com.co", telefono: "+573174011972"},
+    { nombre: "Maritza Majin Rodríguez", correo: "secinvescali3@atlas.com.co", telefono: "+573172178473"},
+    { nombre: "Jairo López ", correo: "jairolo962@gmail.com", telefono: "+573152354796"},
+    { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960"},
 ];
 
 // ✅ **Crear un nuevo caso**
