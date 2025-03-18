@@ -344,7 +344,8 @@ router.put('/:id', async (req, res) => {
         "cancelada por evaluado",
         "cancelada por VerifiK",
         "cancelada por Atlas",
-        "subida al Drive"
+        "subida al Drive",
+        "reprogramada"
     ];
     if (!estadosValidos.includes(estado)) {
         return res.status(400).json({ error: "Estado no válido." });
