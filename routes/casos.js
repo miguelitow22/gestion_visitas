@@ -384,13 +384,7 @@ router.put('/:id', async (req, res) => {
                 );
                 await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
             }
-
-            // Notificar al evaluador
-            if (caso.evaluador_email) {
-                await enviarCorreo(caso.evaluador_email, 'Actualización de Estado de Caso', mensajeEstado);
-                await enviarWhatsAppTemplate(caso.evaluador_telefono, templateName, languageCode, params);
-            }
-
+            
             // Notificar claramente al programador al cambiar estado a "subida al Drive"
             if (estado === "subida al Drive") {
                 const templateName = "actualizacion_subida_drive";
