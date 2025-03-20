@@ -38,7 +38,6 @@ const analistas = [
     { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320"},
     { nombre: "Julieth Quilindo", correo: "jquilindo@atlas.com.co", telefono: "+573174011972"},
     { nombre: "Maritza Majin Rodríguez", correo: "secinvescali3@atlas.com.co", telefono: "+573172178473"},
-    { nombre: "Jairo López ", correo: "jairolo962@gmail.com", telefono: "+573152354796"},
     { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960"},
 ];
 
