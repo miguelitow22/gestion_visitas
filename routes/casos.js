@@ -332,7 +332,7 @@ router.post('/', async (req, res) => {
 // ✅ **Actualizar estado de un caso**
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    let { estado, intentos_contacto, observaciones = "" } = req.body;
+    let { estado, intentos_contacto, observaciones = "", fecha_visita, hora_visita } = req.body;
 
     const estadosValidos = [
         "pendiente",
@@ -356,7 +356,14 @@ router.put('/:id', async (req, res) => {
 
         const { data, error } = await supabase
             .from('casos')
-            .update({ estado, intentos_contacto, observaciones, ultima_interaccion: new Date().toISOString() })
+            .update({ 
+                estado, 
+                intentos_contacto, 
+                observaciones, 
+                fecha_visita, 
+                hora_visita, 
+                ultima_interaccion: new Date().toISOString() 
+            })
             .eq('id', id)
             .select();
 
@@ -374,8 +381,6 @@ router.put('/:id', async (req, res) => {
 
         try {
             // Notificar al analista, si se tiene correo y teléfono
-            // Notificar a todos los analistas sobre la actualización del caso
-
             for (const analistaObj of analistas) {
                 await enviarCorreo(
                     analistaObj.correo,
@@ -384,7 +389,7 @@ router.put('/:id', async (req, res) => {
                 );
                 await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
             }
-            
+
             // Notificar claramente al programador al cambiar estado a "subida al Drive"
             if (estado === "subida al Drive") {
                 const templateName = "actualizacion_subida_drive";
@@ -427,6 +432,30 @@ router.put('/:id', async (req, res) => {
                     console.error('❌ Error enviando notificaciones:', errorNotificacion);
                 }
             }
+
+            // Enviar notificación al evaluador si el estado es "reprogramada"
+            const updatedCase = data[0]; // Registro actualizado después del update
+            if (estado === "reprogramada") {
+                const templateName = "reprogramacion_visita_evaluador1"; // Plantilla que acepta 12 parámetros
+                const languageCode = "es_CO";
+                const params = [
+                    updatedCase.solicitud,                           // {{1}} Solicitud
+                    updatedCase.fecha_visita || "Por definir",         // {{2}} Nueva Fecha
+                    updatedCase.hora_visita || "Por definir",          // {{3}} Nueva Hora
+                    updatedCase.ciudad || "No especificada",           // {{4}} Ciudad
+                    updatedCase.direccion || "No especificada",        // {{5}} Dirección
+                    updatedCase.barrio || "",                          // {{6}} Barrio
+                    updatedCase.punto_referencia || "No especificado", // {{7}} Punto de referencia
+                    updatedCase.nombre,                                // {{8}} Evaluado
+                    updatedCase.telefono,                              // {{9}} Teléfono
+                    updatedCase.cliente,                               // {{10}} Empresa
+                    updatedCase.cargo,                                 // {{11}} Cargo
+                    updatedCase.tipo_visita                            // {{12}} Tipo de visita
+                ];
+                await enviarWhatsAppTemplate(updatedCase.evaluador_telefono, templateName, languageCode, params);
+            }
+            
+            
 
         } catch (notificacionError) {
             console.error("❌ Error en las notificaciones:", notificacionError.message);
