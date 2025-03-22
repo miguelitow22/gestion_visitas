@@ -8,12 +8,14 @@ require('dotenv').config();
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
 // 📌 **Configuración de almacenamiento para evidencias**
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // Máximo 5MB
 });
+
 // ✅ **Constantes con los correos y teléfonos de las regionales**
 const regionales = ["Antioquia", "Caribe", "Centro", "Eje Cafetero", "Nororiente", "Occidente", "Oriente"];
 
@@ -28,17 +30,44 @@ const formularios = {
     "Virtual": "https://forms.gle/8Z6n6g5sZ8Qv9L6m9prueba"
 };
 
+// Función auxiliar para obtener el link del formulario según el tipo de visita
+function obtenerLinkFormulario(tipo_visita) {
+  const key = tipo_visita.toLowerCase().trim();
+  if (key.includes("bicicleta") && key.includes("ingreso")) {
+    return formularios["Ingreso Bicicletas HA"];
+  }
+  if (key.includes("bicicleta") && key.includes("seguimiento")) {
+    return formularios["Seguimiento Bicicletas HA"];
+  }
+  if (key.includes("ingreso")) {
+    return formularios["Ingreso"];
+  }
+  if (key.includes("seguimiento")) {
+    return formularios["Seguimiento"];
+  }
+  if (key.includes("atlas")) {
+    return formularios["Atlas"];
+  }
+  if (key.includes("pic")) {
+    return formularios["Pic Colombia"];
+  }
+  if (key.includes("virtual")) {
+    return formularios["Virtual"];
+  }
+  return "https://formulario.com/default";
+}
+
 // ✅ **Validaciones de datos**
 const validarEmail = email => email ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) : true;
 const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
 // ✅ **Lista de analistas**
 const analistas = [
-    { nombre: "Ana Isabel Aguirre", correo: "aaguirrer@atlas.com.co", telefono: "+573206779735"},
-    { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320"},
-    { nombre: "Julieth Quilindo", correo: "jquilindo@atlas.com.co", telefono: "+573174011972"},
-    { nombre: "Maritza Majin Rodríguez", correo: "secinvescali3@atlas.com.co", telefono: "+573172178473"},
-    { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960"},
+    { nombre: "Ana Isabel Aguirre", correo: "aaguirrer@atlas.com.co", telefono: "+573206779735" },
+    { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320" },
+    { nombre: "Julieth Quilindo", correo: "jquilindo@atlas.com.co", telefono: "+573174011972" },
+    { nombre: "Maritza Majin Rodríguez", correo: "secinvescali3@atlas.com.co", telefono: "+573172178473" },
+    { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960" },
 ];
 
 // ✅ **Crear un nuevo caso**
@@ -80,9 +109,8 @@ router.post('/', async (req, res) => {
         recontactar,
         programador = "",         // NUEVO: nombre del programador
         gastos_adicionales = 0      // NUEVO: valor ingresado para gastos adicionales
-      } = req.body;
+    } = req.body;
       
-
     if (!solicitud || !nombre || !telefono || !estado) {
         return res.status(400).json({ error: 'Datos obligatorios faltantes.' });
     }
@@ -145,15 +173,15 @@ router.post('/', async (req, res) => {
         "Taraza": 194000,
         "Turbo": 244000,
         "Yarumal": 120000,
-      };
+    };
       
-      const viaticosValor = municipiosViaticos[ciudad] || 0;
+    const viaticosValor = municipiosViaticos[ciudad] || 0;
       
-
     try {
         // 📌 **Generar un ID único para el caso**
         const id = uuidv4();
-        const linkFormulario = formularios[tipo_visita] || "https://formulario.com/default";
+        // Usamos la función para obtener el link correcto según el tipo de visita
+        const linkFormulario = obtenerLinkFormulario(tipo_visita);
 
         // 📌 **Guardar el caso en la base de datos**
         const nuevoCaso = {
@@ -200,7 +228,6 @@ router.post('/', async (req, res) => {
             }
           }
           
-
         console.log("✅ Caso insertado en la BD:", casoGuardado);
         try {
             // Notificación al evaluado (seContacto === "Sí")
@@ -274,7 +301,6 @@ router.post('/', async (req, res) => {
                     await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
                 }
             }
-
 
             // Notificación al evaluado (seContacto === "No")
             if (seContacto === "No") {
@@ -436,7 +462,8 @@ router.put('/:id', async (req, res) => {
             // Enviar notificación al evaluador si el estado es "reprogramada"
             const updatedCase = data[0]; // Registro actualizado después del update
             if (estado === "reprogramada") {
-                const templateName = "reprogramacion_visita_evaluador1"; // Plantilla que acepta 12 parámetros
+                const linkFormulario = obtenerLinkFormulario(updatedCase.tipo_visita);
+                const templateName = "reprogramacion_visita_evaluador1"; // Plantilla que acepta 13 parámetros
                 const languageCode = "es_CO";
                 const params = [
                     updatedCase.solicitud,                           // {{1}} Solicitud
@@ -450,13 +477,12 @@ router.put('/:id', async (req, res) => {
                     updatedCase.telefono,                              // {{9}} Teléfono
                     updatedCase.cliente,                               // {{10}} Empresa
                     updatedCase.cargo,                                 // {{11}} Cargo
-                    updatedCase.tipo_visita                            // {{12}} Tipo de visita
+                    updatedCase.tipo_visita,                           // {{12}} Tipo de visita
+                    linkFormulario                                   // {{13}} Link del formulario
                 ];
                 await enviarWhatsAppTemplate(updatedCase.evaluador_telefono, templateName, languageCode, params);
             }
             
-            
-
         } catch (notificacionError) {
             console.error("❌ Error en las notificaciones:", notificacionError.message);
         }
