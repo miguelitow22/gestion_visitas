@@ -279,7 +279,7 @@ router.post('/', async (req, res) => {
 
             // Notificación al analista (seContacto === "Sí" y existe analista)
             // Notificación a todos los analistas (seContacto === "Sí")
-            if (seContacto === "Sí") {
+           /* if (seContacto === "Sí") {
                 const templateName = "asignacion_visita_analista";
                 const languageCode = "es_CO";
                 for (const analistaObj of analistas) {
@@ -301,6 +301,7 @@ router.post('/', async (req, res) => {
                     await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
                 }
             }
+            */
 
             // Notificación al evaluado (seContacto === "No")
             if (seContacto === "No") {
@@ -321,7 +322,7 @@ router.post('/', async (req, res) => {
 
             // Notificación al analista (seContacto === "No" y existe analista)
             // Notificación a todos los analistas en caso de "No Contacto"
-            if (seContacto === "No") {
+           /* if (seContacto === "No") {
                 const templateName = "no_contacto_analista";
                 const languageCode = "es_CO";
                 const params = [
@@ -342,6 +343,7 @@ router.post('/', async (req, res) => {
                     await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
                 }
             }
+            */
 
         } catch (err) {
             console.error("❌ Error en las notificaciones:", err.message);
@@ -407,7 +409,7 @@ router.put('/:id', async (req, res) => {
 
         try {
             // Notificar al analista, si se tiene correo y teléfono
-            for (const analistaObj of analistas) {
+            /*for (const analistaObj of analistas) {
                 await enviarCorreo(
                     analistaObj.correo,
                     'Actualización de Estado de Caso',
@@ -415,6 +417,7 @@ router.put('/:id', async (req, res) => {
                 );
                 await enviarWhatsAppTemplate(analistaObj.telefono, templateName, languageCode, params);
             }
+            */
 
             // Notificar claramente al programador al cambiar estado a "subida al Drive"
             if (estado === "subida al Drive") {
