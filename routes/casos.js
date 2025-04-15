@@ -9,17 +9,20 @@ require('dotenv').config();
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// 📌 Configuración de almacenamiento para evidencias
+// -------------------------------------------------------------
+// Configuración de almacenamiento para evidencias con Multer
+// -------------------------------------------------------------
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // Máximo 5MB
 });
 
-// ✅ Constantes con los correos y teléfonos de las regionales
+// -------------------------------------------------------------
+// Constantes globales
+// -------------------------------------------------------------
 const regionales = ["Antioquia", "Caribe", "Centro", "Eje Cafetero", "Nororiente", "Occidente", "Oriente"];
 
-// ✅ Formularios por tipo de visita
 const formularios = {
     "Ingreso": "https://forms.gle/GdWmReVymyzQLKGn6",
     "Seguimiento": "https://forms.gle/RMiHfRX1VUMCpYdQ7",
@@ -30,7 +33,10 @@ const formularios = {
     "Virtual": "https://forms.gle/8Z6n6g5sZ8Qv9L6m9prueba"
 };
 
-// Función auxiliar para obtener el link del formulario según el tipo de visita
+/**
+ * Función para obtener el link del formulario según el tipo de visita.
+ * Se trabaja con el valor en minúsculas y se realiza búsqueda parcial.
+ */
 function obtenerLinkFormulario(tipo_visita) {
   const key = tipo_visita.toLowerCase().trim();
   if (key.includes("bicicleta") && key.includes("ingreso")) {
@@ -57,11 +63,15 @@ function obtenerLinkFormulario(tipo_visita) {
   return "https://formulario.com/default";
 }
 
-// ✅ Validaciones de datos
+// -------------------------------------------------------------
+// Validaciones de datos
+// -------------------------------------------------------------
 const validarEmail = email => email ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) : true;
 const validarTelefono = telefono => /^\+?\d{10,15}$/.test(telefono);
 
-// ✅ Lista de analistas
+// -------------------------------------------------------------
+// Lista de analistas
+// -------------------------------------------------------------
 const analistas = [
     { nombre: "Ana Isabel Aguirre", correo: "aaguirrer@atlas.com.co", telefono: "+573206779735" },
     { nombre: "Luisa Fernanda Tamayo", correo: "lftamayo@atlas.com.co", telefono: "+573145104320" },
@@ -70,7 +80,9 @@ const analistas = [
     { nombre: "Henry Medina", correo: "henrymedina8@gmail.com", telefono: "+573005679960" },
 ];
 
-// ✅ Crear un nuevo caso
+// -------------------------------------------------------------
+// Endpoint: Crear un nuevo caso
+// -------------------------------------------------------------
 router.post('/', async (req, res) => {
     if (!req.body) {
         return res.status(400).json({ error: "No se recibió un cuerpo en la solicitud." });
@@ -78,7 +90,7 @@ router.post('/', async (req, res) => {
 
     console.log("📌 Recibiendo datos en backend:", req.body);
 
-    // Se añaden los nuevos campos de analista:
+    // Desestructurar los campos, incluyendo los del analista
     const {
         solicitud,
         nombre,
@@ -104,15 +116,15 @@ router.post('/', async (req, res) => {
         telefonoTerciario = "",
         observaciones = "",
         seContacto,
-        // Se reciben los campos vinculados al analista:
+        // Campos vinculados al analista
         analista,             // Nombre del analista seleccionado
         analista_email = "",  // Correo del analista
         analista_telefono = "", // Teléfono del analista
         barrio = "",
         evaluador_telefono,
         recontactar,
-        programador = "",         // NUEVO: nombre del programador
-        gastos_adicionales = 0      // NUEVO: valor ingresado para gastos adicionales
+        programador = "",
+        gastos_adicionales = 0
     } = req.body;
       
     if (!solicitud || !nombre || !telefono || !estado) {
@@ -131,6 +143,7 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'Número de teléfono no válido' });
     }
 
+    // Cálculo de viáticos basado en la ciudad
     const municipiosViaticos = {
         "Medellín": 0,
         "Medellín (Belén AltaVista parte alta)": 15000,
@@ -182,12 +195,12 @@ router.post('/', async (req, res) => {
     const viaticosValor = municipiosViaticos[ciudad] || 0;
       
     try {
-        // 📌 Generar un ID único para el caso
+        // Generar un ID único para el caso
         const id = uuidv4();
-        // Obtenemos el link del formulario según el tipo de visita
+        // Obtener el link del formulario según el tipo de visita
         const linkFormulario = obtenerLinkFormulario(tipo_visita);
 
-        // 📌 Guardar el caso en la base de datos (incluyendo los datos del analista)
+        // Construir el objeto a insertar en la base de datos
         const nuevoCaso = {
             id,
             solicitud,
@@ -220,7 +233,7 @@ router.post('/', async (req, res) => {
             viaticos: viaticosValor,
             gastos_adicionales: gastos_adicionales,
             programador,
-            // Campos para el analista (vinculados por el nombre seleccionado)
+            // Campos para el analista
             analista_asignado: analista || "",
             analista_email: analista_email || "",
             analista_telefono: analista_telefono || ""
@@ -235,8 +248,7 @@ router.post('/', async (req, res) => {
         }
 
         // Enviar notificaciones
-
-        // Notificación al evaluado (seContacto === "Sí")
+        // Notificación al evaluado (cuando se contactó)
         if (seContacto === "Sí") {
             const templateName = "visita_domiciliaria_programada";
             const languageCode = "es_CO";
@@ -256,7 +268,7 @@ router.post('/', async (req, res) => {
             await enviarWhatsAppTemplate(telefono, templateName, languageCode, params);
         }
 
-        // Notificación al evaluador (seContacto === "Sí")
+        // Notificación al evaluador (cuando se contactó)
         if (seContacto === "Sí") {
             const templateName = "asignacion_visita_de_evaluador";
             const languageCode = "es_CO";
@@ -283,7 +295,10 @@ router.post('/', async (req, res) => {
             await enviarWhatsAppTemplate(casoGuardado.evaluador_telefono, templateName, languageCode, params);
         }
 
-        // Notificación al analista (en ambos casos, seContacto === "Sí" o "No", si se seleccionó uno)
+        // Depurar y mostrar en consola los datos del analista
+        console.log("Datos del analista:", { analista, analista_email, analista_telefono });
+
+        // Notificación al analista (si se seleccionó)
         if (analista && analista_email && analista_telefono) {
             const templateName = "asignacion_visita_analista";
             const languageCode = "es_CO";
@@ -309,7 +324,7 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // Notificaciones para seContacto === "No"
+        // Notificaciones cuando no se contactó al evaluado
         if (seContacto === "No") {
             const templateName = "intento_contacto_evaluado";
             const languageCode = "es_CO";
@@ -328,14 +343,15 @@ router.post('/', async (req, res) => {
 
         console.log("✅ Caso insertado en la BD:", casoGuardado);
         res.json({ message: '✅ Caso creado con éxito', data });
-
     } catch (error) {
         console.error('❌ Error al crear el caso:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ✅ Actualizar estado de un caso
+// -------------------------------------------------------------
+// Endpoint: Actualizar estado de un caso
+// -------------------------------------------------------------
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
     let { estado, intentos_contacto, observaciones = "", fecha_visita, hora_visita } = req.body;
@@ -377,7 +393,7 @@ router.put('/:id', async (req, res) => {
 
         res.json({ message: '✅ Caso actualizado con éxito', data });
 
-        // Mensaje textual (para correo o respaldo)
+        // Mensaje textual para respaldo o correo
         const mensajeEstado = `🔔 ACTUALIZACION DE ESTADO\n\nLa solicitud ${caso.solicitud} ha sido actualizada al estado de ${estado}.\n\nEsto es un mensaje automático, este número no recibe mensajes. Si requiere comunicación, comuníquese con el WhatsApp: 3176520775 o el Email: verifikhm@gmail.com.`;
 
         const templateName = "actualizacion_estado_caso";
@@ -389,17 +405,13 @@ router.put('/:id', async (req, res) => {
             if (estado === "subida al Drive") {
                 const templateName = "actualizacion_subida_drive";
                 const languageCode = "es_CO";
-
                 const programadorTelefono = "+573176520775";
                 const programadorEmail = "verifikhm@gmail.com";
 
                 const mensajeCorreo = `
                 🔔 ACTUALIZACIÓN DE ESTADO
-  
                 La solicitud ${caso.solicitud} ha sido subida al Drive para ser revisada y complementada.
-  
                 Una vez complementada, súbala al sistema Savila de Atlas Seguridad y asegúrese de cambiar el estado a TERMINADA.
-  
                 Este es un mensaje automático, no responda directamente.
                 Si necesita ayuda, comuníquese al WhatsApp: ${programadorTelefono} o al Email: ${programadorEmail}.
                 `;
@@ -422,7 +434,7 @@ router.put('/:id', async (req, res) => {
                 }
             }
 
-            // Enviar notificación al evaluador si el estado es "reprogramada"
+            // Notificar al evaluador si el estado es "reprogramada"
             const updatedCase = data[0];
             if (estado === "reprogramada") {
                 const linkFormulario = obtenerLinkFormulario(updatedCase.tipo_visita);
@@ -449,14 +461,15 @@ router.put('/:id', async (req, res) => {
         } catch (notificacionError) {
             console.error("❌ Error en las notificaciones:", notificacionError.message);
         }
-
     } catch (error) {
         console.error('❌ Error al actualizar el caso:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ✅ Subir evidencia
+// -------------------------------------------------------------
+// Endpoint: Subir evidencia para un caso
+// -------------------------------------------------------------
 router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
     const { id } = req.params;
 
@@ -508,14 +521,15 @@ router.post('/:id/evidencia', upload.single("archivo"), async (req, res) => {
 
         console.log(`✅ [LOG] Evidencia subida correctamente: ${publicUrl}`);
         res.json({ message: "✅ Evidencia subida con éxito", url: publicUrl });
-
     } catch (error) {
         console.error('❌ [LOG] Error al subir la evidencia:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ✅ Obtener un caso específico por ID
+// -------------------------------------------------------------
+// Endpoint: Obtener un caso específico por ID
+// -------------------------------------------------------------
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -529,7 +543,9 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ✅ Obtener todos los casos
+// -------------------------------------------------------------
+// Endpoint: Obtener todos los casos
+// -------------------------------------------------------------
 router.get('/', async (req, res) => {
     try {
         const { data, error } = await supabase.from('casos').select('*');
