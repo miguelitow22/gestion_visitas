@@ -117,7 +117,7 @@ router.post('/', async (req, res) => {
         observaciones = "",
         seContacto,
         // Campos vinculados al analista
-        analista,             // Nombre del analista seleccionado
+        analista_asignado,             // Nombre del analista seleccionado
         analista_email = "",  // Correo del analista
         analista_telefono = "", // Teléfono del analista
         barrio = "",
@@ -234,7 +234,7 @@ router.post('/', async (req, res) => {
             gastos_adicionales: gastos_adicionales,
             programador,
             // Campos para el analista
-            analista_asignado: analista || "",
+            analista_asignado: analista_asignado || "",
             analista_email: analista_email || "",
             analista_telefono: analista_telefono || ""
         };
@@ -296,15 +296,15 @@ router.post('/', async (req, res) => {
         }
 
         // Depurar y mostrar en consola los datos del analista
-        console.log("Datos del analista:", { analista, analista_email, analista_telefono });
+        console.log("Datos del analista:", { analista_asignado, analista_email, analista_telefono });
 
         // Notificación al analista (si se seleccionó)
-        if (analista && analista_email && analista_telefono) {
+        if (analista_asignado && analista_email && analista_telefono) {
             const templateName = "asignacion_visita_analista";
             const languageCode = "es_CO";
             const params = [
                 solicitud,
-                analista,
+                analista_asignado,
                 nombre,
                 cliente,
                 cargo,
